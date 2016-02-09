@@ -748,3 +748,9 @@ void pre_opcode_21()
         RESET_Z(regs.byte.F);
     }
 }
+
+// SLA D
+void pre_opcode_22()
+{
+
+}
