@@ -1,4 +1,4 @@
 #include "cpu.h"
 #include "memory.h"
 
-BYTE memory[65536]; // 16-bit memory
+BYTE memory[MEM_SIZE] = {0}; // 16-bit memory

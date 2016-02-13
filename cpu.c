@@ -2,11 +2,12 @@
 #include "opcodes.h"
 #include "memory.h"
 #include "registers.h"
+#include "stdio.h"
 
 #define INITIAL_PC 0x0100
 #define INITIAL_SP 0xFFFE
 
-int enable_interrupt;
+int enable_interrupt; // ime flag
 int counter;
 BYTE opcode; //opcode
 int cycles[256] = {4,12,8,8,4,4,8,4,20,8,8,8,4,4,8,4,
@@ -25,13 +26,33 @@ int cycles[256] = {4,12,8,8,4,4,8,4,20,8,8,8,4,4,8,4,
                      20,12,16,0,24,16,8,16,20,16,16,0,24,0,8,16,
                      12,12,8,0,0,16,8,16,16,4,16,0,0,0,8,16,
                      12,12,8,4,0,16,8,16,12,8,16,4,0,0,8,16};
+int pre_cycles[256] = {8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                       8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                       8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                       8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                       8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                       8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                       8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                       8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                       8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                       8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                       8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                       8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                       8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                       8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                       8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
+                       8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8};
+
+int clock = 4194304;
 
 void start_cpu()
 {
+    FILE *fp = fopen("tetris.gb", "rb");
+    int n = fread(memory,1,32768,fp);
     pc.PC = INITIAL_PC;
     sp.SP = INITIAL_SP;
+    printf("%hx", memory[0x0147]);
     counter = 100;
-
     for (;;) {
         opcode = memory[pc.PC++];
         counter -= cycles[opcode];
@@ -282,22 +303,27 @@ void start_cpu()
             case 0xFE: opcode_FE(); break;
             case 0xFF: opcode_FF(); break;
         }
+        break;
     }
 }
 
+// returns 1 if flag z is set
 BYTE test_z(BYTE f)
 {
-    return f & 0x80;
+    return (f & 0x80) >> 7;
 }
+// returns 1 if flag n is set
 BYTE test_n(BYTE f)
 {
-    return f & 0x40;
+    return (f & 0x40) >> 6;
 }
+// returns 1 if flag h is set
+BYTE test_h(BYTE f)
+{
+    return (f & 0x20) >> 5;
+}
+// returns 1 if flag c is set
 BYTE test_c(BYTE f)
 {
     return (f & 0x10) >> 4;
-}
-BYTE test_h(BYTE f)
-{
-    return f & 0x20;
 }
