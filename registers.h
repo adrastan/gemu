@@ -1,29 +1,30 @@
 #ifndef REGISTERS_H
 #define REGISTERS_H
+#include "cpu_types.h"
 
 // main registers
 union registers {
     struct {
-        WORD AF, BC, DE, HL; // MSB -> LSB
+        u_int16 AF, BC, DE, HL; // MSB -> LSB
     } word;
     struct {
-        BYTE F, A, C, B, E, D, L, H; // LSB -> MSB
+        u_int8 F, A, C, B, E, D, L, H; // LSB -> MSB
     } byte;
 };
 
 // stack pointer
 union stack_pointer {
-    WORD SP;
+    u_int16 SP;
     struct {
-        BYTE L, H;
+        u_int8 L, H;
     } byte;
 };
 
 // program counter
 union program_counter {
-    WORD PC;
+    u_int16 PC;
     struct {
-        BYTE L, H;
+        u_int8 L, H;
     } byte;
 };
 

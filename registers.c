@@ -1,4 +1,3 @@
-#include "cpu.h"
 #include "registers.h"
 
 union registers regs;
