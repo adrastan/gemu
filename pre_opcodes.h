@@ -1,7 +1,162 @@
 #ifndef PRE_OPCODES_H
 #define PRE_OPCODES_H
+#include "cpu_types.h"
+#include "registers.h"
+#include "cpu.h"
+
+static inline void RLC(u_int8 * byte)
+{
+    u_int8 bit = (*byte >> 7) & 1; // get 7th bit
+    *byte <<=  1; // shift left 1
+    *byte |= bit;
+    if (bit == 1) {
+        set_c();
+    } else {
+        reset_c();
+    }
+    if (*byte == 0) {
+        set_z();
+    } else {
+        reset_z();
+    }
+    reset_h();
+    reset_n();
+}
+
+static inline void RRC(u_int8 * byte)
+{
+    u_int8 bit = (*byte) & 1; // get 0th bit
+    *byte >>=  1; // shift right 1
+    *byte |= (bit << 7);
+    if (bit == 1) {
+        set_c();
+    } else {
+        reset_c();
+    }
+    if (*byte == 0) {
+        set_z();
+    } else {
+        reset_z();
+    }
+    reset_h();
+    reset_n();
+}
+
+static inline void RL(u_int8 * byte)
+{
+    u_int8 bit = (*byte >> 7) & 1; // get 7th bit
+    u_int8 carry = (regs.byte.F >> 4) & 1; // get carry bit
+    *byte <<= 1; // shift left 1
+    *byte |= carry;
+    if (bit == 1) {
+        set_c();
+    } else {
+        reset_c();
+    }
+    if (*byte == 0) {
+        set_z();
+    } else {
+        reset_z();
+    }
+    reset_n();
+    reset_h();
+}
+
+static inline void RR(u_int8 * byte)
+{
+    u_int8 bit = (*byte) & 1; // get 0th bit
+    u_int8 carry = (regs.byte.F >> 4) & 1; // get carry bit
+    *byte >>= 1; // shift left 1
+    *byte |= (carry << 7);
+    if (bit == 1) {
+        set_c();
+    } else {
+        reset_c();
+    }
+    if (*byte == 0) {
+        set_z();
+    } else {
+        reset_z();
+    }
+    reset_n();
+    reset_h();
+}
+
+static inline void SLA(u_int8 * byte)
+{
+    u_int8 bit = (*byte >> 7) & 1; // get 7th bit
+    *byte <<= 1;
+    regs.byte.F ^= (-bit ^ regs.byte.F) & (1 << 0x04); // copy bit 7 to carry bit
+    if (*byte == 0) {
+        set_z();
+    } else {
+        reset_z();
+    }
+    reset_h();
+    reset_n();
+}
+
+static inline void SRA(u_int8 * byte)
+{
+    u_int8 bit = (*byte >> 7) & 1; // get 7th bit
+    if (((*byte) & 0x01) == 0x01) {
+        set_c();
+    } else {
+        reset_c();
+    }
+    *byte >>= 1;
+    *byte ^= (-bit ^ *byte) & (1 << 0x07); // copy bit 7 back
+    if (*byte == 0) {
+        set_z();
+    } else {
+        reset_z();
+    }
+    reset_n();
+    reset_h();
+}
+
+static inline void SWAP(u_int8 * byte)
+{
+    u_int8 low_nibble = 0x0F & *byte;
+    u_int8 high_nibble = 0xF0 & *byte;
+    *byte = (high_nibble >> 4) | (low_nibble << 4);
+    if (*byte == 0) {
+        set_z();
+    } else {
+        reset_z();
+    }
+    reset_n();
+    reset_h();
+    reset_c();
+}
+
+static inline void SRL(u_int8 * byte)
+{
+    u_int8 bit = 0x01 & *byte; // get bit 0
+    regs.byte.F ^= (-bit ^ regs.byte.F) & (1 << 0x04); // copy bit 0 to carry bit
+    *byte >>= 1;
+    if (*byte == 0) {
+        set_z();
+    } else {
+        reset_z();
+    }
+    reset_n();
+    reset_h();
+}
+
+static inline void BIT(u_int8 * byte, int bit)
+{
+    if ((*byte & (0x01 << bit)) == 0x00) {
+        set_z();
+    } else {
+        reset_z();
+    }
+    reset_n();
+    set_h();
+}
 
 void pre_opcode_00();
+void pre_opcode_01();
 void pre_opcode_02();
 void pre_opcode_03();
 void pre_opcode_04();
@@ -211,6 +366,7 @@ void pre_opcode_CF();
 void pre_opcode_D0();
 void pre_opcode_D1();
 void pre_opcode_D2();
+void pre_opcode_D3();
 void pre_opcode_D4();
 void pre_opcode_D5();
 void pre_opcode_D6();
@@ -218,24 +374,32 @@ void pre_opcode_D7();
 void pre_opcode_D8();
 void pre_opcode_D9();
 void pre_opcode_DA();
+void pre_opcode_DB();
 void pre_opcode_DC();
+void pre_opcode_DD();
 void pre_opcode_DE();
 void pre_opcode_DF();
 void pre_opcode_E0();
 void pre_opcode_E1();
 void pre_opcode_E2();
+void pre_opcode_E3();
+void pre_opcode_E4();
 void pre_opcode_E5();
 void pre_opcode_E6();
 void pre_opcode_E7();
 void pre_opcode_E8();
 void pre_opcode_E9();
 void pre_opcode_EA();
+void pre_opcode_EB();
+void pre_opcode_EC();
+void pre_opcode_ED();
 void pre_opcode_EE();
 void pre_opcode_EF();
 void pre_opcode_F0();
 void pre_opcode_F1();
 void pre_opcode_F2();
 void pre_opcode_F3();
+void pre_opcode_F4();
 void pre_opcode_F5();
 void pre_opcode_F6();
 void pre_opcode_F7();
@@ -243,6 +407,8 @@ void pre_opcode_F8();
 void pre_opcode_F9();
 void pre_opcode_FA();
 void pre_opcode_FB();
+void pre_opcode_FC();
+void pre_opcode_FD();
 void pre_opcode_FE();
 void pre_opcode_FF();
 
