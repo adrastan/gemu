@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #ifndef MEMORY_H
 #define MEMORY_H
 #include "cpu_types.h"
@@ -44,3 +45,12 @@ static inline void write_memory(u_int16 address, u_int8 byte)
 }
 
 #endif // MEMORY_H
+=======
+#ifndef MEMORY_H
+#define MEMORY_H
+
+#define MEM_SIZE 65536
+extern BYTE memory[];
+
+#endif // MEMORY_H
+>>>>>>> origin/master
