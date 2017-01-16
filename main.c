@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #include <SDL2/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -32,16 +31,4 @@ int main(int argc, char* args[])
     SDL_Quit();
 
     return 0;
-=======
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include "cpu.h"
-
-int main()
-{
-    start_cpu();
-
-    return 0;
->>>>>>> origin/master
 }
