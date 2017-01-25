@@ -5,21 +5,14 @@
 #include "lcd_controller.h"
 #include "timers.h"
 #include "interrupts.h"
-#include <stdio.h>
 #include <stdlib.h>
 #include <windows.h>
 
-
-#define INITIAL_PC 0x0100
-#define INITIAL_SP 0xFFFE
-#define INITIAL_AF 0x01B0
-#define INITIAL_BC 0x0013
-#define INITIAL_DE 0x00D8
-#define INITIAL_HL 0x014D
+int delay;
+int halt;
 int ime = 1; // interrupt master enable
 u_int8 opcode;
-int counter = 0;
-int interrupt_cycles[4] = {204, 80, 172, 456};
+int counter;
 int op_cycles[256] = {4,12,8,8,4,4,8,4,20,8,8,8,4,4,8,4,
                      4,12,8,8,4,4,8,4,12,8,8,8,4,4,8,4,
                      12,12,8,8,4,4,8,4,12,8,8,8,4,4,8,4,
@@ -57,144 +50,62 @@ int clock = 4194304;
 
 void start_cpu()
 {
-    FILE *fp = fopen("tetris.gb", "rb");
+    FILE *fp = fopen("./tetris.gb", "rb");
     read_rom(fp);
     init_regs();
     set_clock_freq();
     switch_mode(2);
     int debug = 0;
     char c;
-    int fps_count = 69905;
-    for (;;) {
-        while (fps_count >= 0) {
-            counter = 0;
-            for (int i = 0; i < 10; ++i) {
-                opcode = read_memory(pc.PC++);
-                counter -= (op_cycles[opcode]);
-                process_opcode();
-                //if (pc.PC == 0x288A) {
-                //    debug = 1;
-                //}
-                //if (debug) {
-                //    print_flags();
-                //    if ((c = getchar()) == 'd') {
-                //        debug = 0;
-                //    }
-                //}
-            }
+    int fps_count = 0;
+    char p[] = "0100";
+    int n = (int)strtol(p,NULL,16);
 
+    for (;;) {
+        while (fps_count <= 69905) {
+            counter = delay;
+            delay = 0;
+            if (!halt) {
+                opcode = read_memory(pc.PC++);
+                counter += op_cycles[opcode];
+                process_opcode();
+            } else {
+                counter += 4;
+            }
+            if (0) {
+                debug = 1;
+            }
+            if (debug && memory[0xff44] >= 143) {
+                print_flags();
+                c = getchar();
+                if ((c) == 'q') {
+                    getchar();
+                    debug = 0;
+                } else if (c == '\n') {
+
+                } else {
+                    p[0] = c;
+                    p[1] = getchar();
+                    p[2] = getchar();
+                    p[3] = getchar();
+                    n = (int)strtol(p,NULL,16);
+                    getchar();
+                    debug = 0;
+                }
+            }
             fps_count += counter;
             update_lcd(counter);
             update_timers(counter);
-            check_interrupts(); // check if interrupts are pending
+            check_interrupts();
         }
         draw_frame();
-        fps_count += 69905;
+        fps_count -= 69905;
     }
 }
 
-void update_lcd(int cycles)
+void set_delay(int d)
 {
-    if (!(is_set(memory[0xff40],7))) {
-        interrupt_cycles[3] = 456;
-        memory[0xff44] = 0;
-        switch_mode(1);
-        return;
-    }
-
-    int mode = get_mode();
-
-    if (mode == 2) {
-        interrupt_cycles[1] += cycles;
-        if (interrupt_cycles[1] <= 0) {
-            interrupt_cycles[2] += interrupt_cycles[1];
-            interrupt_cycles[1] = 80;
-            switch_mode(3);
-        }
-    } else if (mode == 3) {
-        interrupt_cycles[2] += cycles;
-        if (interrupt_cycles[2] <= 0) {
-            interrupt_cycles[0] += interrupt_cycles[2];
-            interrupt_cycles[2] = 172;
-            switch_mode(0);
-            if (is_set(memory[0xff41],3)) {
-                request_interrupt(1);
-            }
-        }
-    } else if (mode == 0) {
-        interrupt_cycles[0] += cycles;
-        if (interrupt_cycles[0] <= 0) {
-            if (memory[0xff44] == 144) {
-                interrupt_cycles[0] = 204;
-                switch_mode(1);
-                request_interrupt(0);
-                if (is_set(memory[0xff41],4)) {
-                    request_interrupt(1);
-                }
-            } else {
-                interrupt_cycles[1] += interrupt_cycles[0];
-                interrupt_cycles[0] = 204;
-                switch_mode(2);
-                if (is_set(memory[0xff41],5)) {
-                    request_interrupt(1);
-                }
-            }
-        }
-    } else {
-        if (memory[0xff44] == 0) {
-            interrupt_cycles[1] -= (456 - interrupt_cycles[3]);
-            switch_mode(2);
-            if (is_set(memory[0xff41],5)) {
-                request_interrupt(1);
-            }
-        }
-    }
-    compare_ly();
-
-    interrupt_cycles[3] += cycles;
-
-    if (interrupt_cycles[3] <= 0) {
-        interrupt_cycles[3] += 456;
-        if (memory[0xff44] < 144) {
-            update_graphics();
-        }
-        inc_ly();
-    }
-}
-
-void compare_ly()
-{
-    if (memory[0xff45] == memory[0xff44]) {
-        memory[0xff41] |= (1 << 2);
-        if (is_set(memory[0xff41],6)) {
-            request_interrupt(1);
-        }
-    } else {
-        memory[0xff41] &= ~(1 << 2);
-    }
-}
-
-void inc_ly()
-{
-    if ((++memory[0xff44]) == 154) {
-        memory[0xff44] = 0;
-    }
-}
-
-int get_mode()
-{
-    return memory[0xff41] & 0x03;
-}
-
-void switch_mode(int mode)
-{
-    memory[0xff41] &= 0xfc;
-    switch (mode) {
-        case 0: break;
-        case 1: memory[0xff41] |= 1; break;
-        case 2: memory[0xff41] |= 2; break;
-        case 3: memory[0xff41] |= 3; break;
-    }
+    delay = d;
 }
 
 // returns 1 if flag z is set
@@ -264,14 +175,19 @@ int half_carry(u_int8 a, u_int8 b)
     return (((a & 0xf) + (b & 0xf)) & 0x10) == 0x10;
 }
 
+int is_set(u_int8 byte, int bit)
+{
+    return byte & (1 << bit);
+}
+
 void init_regs()
 {
-    pc.PC = INITIAL_PC;
-    sp.SP = INITIAL_SP;
-    regs.word.AF = INITIAL_AF;
-    regs.word.BC = INITIAL_BC;
-    regs.word.DE = INITIAL_DE;
-    regs.word.HL = INITIAL_HL;
+    pc.PC = 0x0100;
+    sp.SP = 0xFFFE;
+    regs.word.AF = 0x01B0;
+    regs.word.BC = 0x0013;
+    regs.word.DE = 0x00D8;
+    regs.word.HL = 0x014D;
     write_memory(0xFF05, 0x00);
     write_memory(0xFF06, 0x00);
     write_memory(0xFF07, 0x00);
@@ -316,9 +232,13 @@ void read_rom(FILE* fp)
     }
 }
 
-int is_set(u_int8 byte, int bit)
+void push(u_int16 word)
 {
-    return byte & (1 << bit);
+    u_int8 high = (word & 0xff00) >> 8;
+    u_int8 low = (word & 0x00ff);
+    write_memory(sp.SP-1, high);
+    write_memory(sp.SP-2, low);
+    sp.SP = sp.SP - 2;
 }
 
 void process_opcode()
@@ -586,4 +506,8 @@ void print_flags()
     printf("N: %d\n", test_n());
     printf("H: %d\n", test_h());
     printf("C: %d\n", test_c());
+    printf("ffff: %hx\n", memory[0xffff]);
+    printf("ff0f: %hx\n", memory[0xff0f]);
+    printf("ime: %d\n", ime);
+    printf("ly: %d\n", memory[0xff44]);
 }
