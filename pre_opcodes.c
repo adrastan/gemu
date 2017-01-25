@@ -1376,7 +1376,7 @@ void pre_opcode_DE()
 // SET 3,A
 void pre_opcode_DF()
 {
-    regs.byte.A |= ~(0x01 << 3);
+    regs.byte.A |= (0x01 << 3);
 }
 
 // SET 4,B

@@ -1,6 +1,5 @@
 #ifndef PRE_OPCODES_H
 #define PRE_OPCODES_H
-#include "cpu_types.h"
 #include "registers.h"
 #include "cpu.h"
 
@@ -66,7 +65,7 @@ static inline void RR(u_int8 * byte)
 {
     u_int8 bit = (*byte) & 1; // get 0th bit
     u_int8 carry = (regs.byte.F >> 4) & 1; // get carry bit
-    *byte >>= 1; // shift left 1
+    *byte >>= 1; // shift right 1
     *byte |= (carry << 7);
     if (bit == 1) {
         set_c();
@@ -132,8 +131,11 @@ static inline void SWAP(u_int8 * byte)
 
 static inline void SRL(u_int8 * byte)
 {
-    u_int8 bit = 0x01 & *byte; // get bit 0
-    regs.byte.F ^= (-bit ^ regs.byte.F) & (1 << 0x04); // copy bit 0 to carry bit
+    if (*byte & 1) {
+        set_c();
+    } else {
+        reset_c();
+    }
     *byte >>= 1;
     if (*byte == 0) {
         set_z();
