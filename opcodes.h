@@ -1,6 +1,5 @@
 #ifndef OPCODES_H
 #define OPCODES_H
-#include "cpu_types.h"
 #include "registers.h"
 #include "cpu.h"
 
@@ -123,20 +122,19 @@ static inline void SUB_A(u_int8 byte)
 
 static inline void SBC_A(u_int8 byte)
 {
-    if ((regs.byte.A & 0x0F) < ((byte + test_c()) & 0xf)) {
-        set_h();
-    } else {
-        reset_h();
-    }
-    int temp1 = regs.byte.A;
-    int temp2 = byte;
-    int temp3 = test_c();
-    regs.byte.A -= byte - test_c();
-    if (temp1 < (temp2 + temp3)) {
+    //byte += test_c();
+    u_int8 c = test_c();
+    if ((u_int16)regs.byte.A < ((u_int16)byte + c)) {
         set_c();
     } else {
         reset_c();
     }
+    if ((regs.byte.A & 0x0f) < ((byte &0x0f) + c)) {
+        set_h();
+    } else {
+        reset_h();
+    }
+    regs.byte.A -= (byte + c);
     if (regs.byte.A == 0) {
         set_z();
     } else {

@@ -7,8 +7,10 @@
 
 extern int counter;
 extern int pre_cycles[];
+extern int op_cycles[];
 extern int ime;
 extern u_int8 opcode;
+extern int halt;
 
 // LD BC, d16
 void opcode_01()
@@ -582,7 +584,7 @@ void opcode_20()
         pc.PC += (signed char)byte;
     } else {
         pc.PC++;
-        counter += 4;
+        counter -= 4;
     }
 }
 
@@ -594,7 +596,7 @@ void opcode_30()
         pc.PC += (signed char)byte;
     } else {
         pc.PC++;
-        counter += 4;
+        counter -= 4;
     }
 }
 
@@ -613,7 +615,7 @@ void opcode_28()
         pc.PC += (signed char)byte;
     } else {
         pc.PC++;
-        counter += 4;
+        counter -= 4;
     }
 }
 
@@ -625,7 +627,7 @@ void opcode_38()
         pc.PC += (signed char)byte;
     } else {
         pc.PC++;
-        counter += 4;
+        counter -= 4;
     }
 }
 
@@ -637,7 +639,7 @@ void opcode_C0()
         pc.byte.H = read_memory(sp.SP+1);
         sp.SP += 2;
     } else {
-        counter += 12;
+        counter -= 12;
     }
 }
 
@@ -649,7 +651,7 @@ void opcode_D0()
         pc.byte.H = read_memory(sp.SP+1);
         sp.SP += 2;
     } else {
-        counter += 12;
+        counter -= 12;
     }
 }
 
@@ -663,7 +665,7 @@ void opcode_C2()
         pc.byte.H = msb;
     } else {
         pc.PC += 2;
-        counter += 4;
+        counter -= 4;
     }
 }
 
@@ -677,7 +679,7 @@ void opcode_D2()
         pc.byte.H = msb;
     } else {
         pc.PC += 2;
-        counter += 4;
+        counter -= 4;
     }
 }
 
@@ -703,7 +705,7 @@ void opcode_C4()
         pc.byte.H = msb;
     } else {
         pc.PC += 2;
-        counter += 12;
+        counter -= 12;
     }
 }
 
@@ -720,7 +722,7 @@ void opcode_D4()
         pc.byte.H = msb;
     } else {
         pc.PC += 2;
-        counter += 12;
+        counter -= 12;
     }
 }
 
@@ -767,7 +769,7 @@ void opcode_C8()
         pc.byte.L = read_memory(sp.SP++);
         pc.byte.H = read_memory(sp.SP++);
     } else {
-        counter += 12;
+        counter -= 12;
     }
 }
 
@@ -778,7 +780,7 @@ void opcode_D8()
         pc.byte.L = read_memory(sp.SP++);
         pc.byte.H = read_memory(sp.SP++);
     } else {
-        counter += 12;
+        counter -= 12;
     }
 }
 
@@ -813,7 +815,7 @@ void opcode_CA()
         pc.byte.H = msb;
     } else {
         pc.PC += 2;
-        counter += 4;
+        counter -= 4;
     }
 }
 
@@ -827,7 +829,7 @@ void opcode_DA()
         pc.byte.H = msb;
     } else {
         pc.PC += 2;
-        counter += 4;
+        counter -= 4;
     }
 }
 
@@ -844,7 +846,7 @@ void opcode_CC()
         pc.byte.H = msb;
     } else {
         pc.PC += 2;
-        counter += 12;
+        counter -= 12;
     }
 }
 
@@ -861,7 +863,7 @@ void opcode_DC()
         pc.byte.H = msb;
     } else {
         pc.PC += 2;
-        counter += 12;
+        counter -= 12;
     }
 }
 
@@ -1097,14 +1099,12 @@ void opcode_17()
 // DAA
 void opcode_27()
 {
-    u_int8 high_nibble = regs.byte.A >> 4;
-    u_int8 low_nibble = regs.byte.A & 0xf;
     int a = regs.byte.A;
     if (test_n() == 0) {
-        if (low_nibble > 0x09 || test_h() == 1) {
+        if ((a & 0x0f) > 0x09 || test_h() == 1) {
             a += 0x06;
         }
-        if (high_nibble > 0x09 || test_c() == 1) {
+        if (a > 0x9f || test_c() == 1) {
             a += 0x60;
         }
     } else {
@@ -1712,38 +1712,31 @@ void opcode_F1()
 {
     regs.byte.F = read_memory(sp.SP++);
     regs.byte.A = read_memory(sp.SP++);
+    regs.byte.F &= 0xf0;
 }
 
 // PUSH BC
 void opcode_C5()
 {
-    write_memory(sp.SP-1, regs.byte.B);
-    write_memory(sp.SP-2, regs.byte.C);
-    sp.SP = sp.SP - 2;
+    push(regs.word.BC);
 }
 
 // PUSH DE
 void opcode_D5()
 {
-    write_memory(sp.SP-1, regs.byte.D);
-    write_memory(sp.SP-2, regs.byte.E);
-    sp.SP = sp.SP - 2;
+    push(regs.word.DE);
 }
 
 // PUSH HL
 void opcode_E5()
 {
-    write_memory(sp.SP-1, regs.byte.H);
-    write_memory(sp.SP-2, regs.byte.L);
-    sp.SP = sp.SP - 2;
+    push(regs.word.HL);
 }
 
 // PUSH AF
 void opcode_F5()
 {
-    write_memory(sp.SP-1, regs.byte.A);
-    write_memory(sp.SP-2, regs.byte.F);
-    sp.SP = sp.SP - 2;
+    push(regs.word.AF);
 }
 
 // STOP 0
@@ -1756,14 +1749,14 @@ void opcode_10()
 // HALT TODO
 void opcode_76()
 {
-
+    halt = 1;
 }
 
 // PREFIX
 void opcode_CB()
 {
     opcode = read_memory(pc.PC++);
-    counter -= pre_cycles[opcode];
+    counter += pre_cycles[opcode];
     switch (opcode) {
             case 0x00: pre_opcode_00(); break;
             case 0x01: pre_opcode_01(); break;
@@ -2034,4 +2027,7 @@ void opcode_F3()
 void opcode_FB()
 {
     ime = 1;
+    opcode = read_memory(pc.PC++);
+    counter += op_cycles[opcode];
+    process_opcode();
 }
