@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "cpu.h"
 #include "memory.h"
 #include "lcd_controller.h"
@@ -20,9 +21,21 @@ void update_graphics()
 {
     if (memory[0xff40] & 0x1) {
         draw_tiles();
+    } else {
+        draw_blank();
     }
     if (memory[0xff40] & 0x2) {
         draw_sprites();
+    }
+}
+
+void draw_blank()
+{
+    int ly = memory[0xff44];
+    for (int pixel = 0; pixel < 160; ++pixel) {
+        screen[pixel][ly][0] = 0xFF;
+        screen[pixel][ly][1] = 0xFF;
+        screen[pixel][ly][2] = 0xFF;
     }
 }
 
@@ -30,35 +43,34 @@ void draw_tiles()
 {
     u_int8 scrolly = memory[0xff42];
     u_int8 scrollx = memory[0xff43];
-    u_int8 winy = memory[0xff4a];
-    u_int8 winx = memory[0xff4b] - 7;
+    int winy = memory[0xff4a];
+    int winx = memory[0xff4b] - 7;
     int using_window = 0;
     int unsign = 1;
     u_int16 bg_map;
     u_int16 win_map;
     u_int16 tile_data;
     u_int8 ly = memory[0xff44];
+    u_int8 lcdc = memory[0xff40];
 
-    if (memory[0xff40] & (1 << 5)) {
+    if (is_set(lcdc,5)) {
         if (winy <= ly) {
             using_window = 1;
         }
     }
-
     if (using_window) {
-        if (memory[0xff40] & (1 << 6)) {
+        if (is_set(lcdc,6)) {
             win_map = 0x9C00;
         } else {
             win_map = 0x9800;
         }
     }
-    if (memory[0xff40] & (1 << 3)) {
+    if (is_set(lcdc,3)) {
         bg_map = 0x9C00;
     } else {
         bg_map = 0x9800;
     }
-
-    if (memory[0xff40] & (1 << 4)) {
+    if (is_set(lcdc,4)) {
         tile_data = 0x8000;
     } else {
         tile_data = 0x8800;
@@ -67,18 +79,17 @@ void draw_tiles()
 
     u_int8 y_pos, x_pos;
     u_int16 tile_id, tile_address;
-    //ly -= 143;
-    //ly *= -1;
+
     for (int pixel = 0; pixel < 160; ++pixel) {
 
         if (using_window && pixel >= winx) {
             x_pos = pixel - winx;
-            y_pos = memory[0xff44] - winy;
+            y_pos = ly - winy;
             tile_id = ((y_pos / 8 * 32) + (x_pos / 8));
             tile_address = win_map + tile_id;
         } else {
             x_pos = pixel + scrollx;
-            y_pos = scrolly + memory[0xff44];
+            y_pos = scrolly + ly;
             tile_id = ((y_pos / 8 * 32) + (x_pos / 8));
             tile_address = bg_map + tile_id;
         }
@@ -145,7 +156,7 @@ void draw_tiles()
             default: break;
         }
 
-        if (memory[0xff44] < 0 || memory[0xff44] > 143) {
+        if (ly < 0 || ly > 143) {
             continue;
         }
         screen[pixel][ly][0] = red;
@@ -157,10 +168,12 @@ void draw_tiles()
 void draw_sprites()
 {
     u_int8 ly = memory[0xff44];
+    u_int8 lcdc = memory[0xff40];
     u_int8 sprites_to_draw[10][4] = {{0}};
     int sprite_size = 8;
     int count = 0;
 
+    // get all sprites from oam memory
     for (int i = 0; i < 40; ++i) {
         for (int j = 0; j < 4; ++j) {
             sprites[i][j] = memory[0xFE00+count];
@@ -169,9 +182,10 @@ void draw_sprites()
     }
     int sprite_count = 0;
 
-    if (is_set(memory[0xff40],2)) {
+    if (is_set(lcdc,2)) {
         sprite_size = 16;
     }
+    // determine which sprites fall on the current scanline
     if (sprite_size == 8) {
         for (int i = 0; i < 40; ++i) {
             if (ly >= sprites[i][0] - 16 && ly < sprites[i][0] - 8) {
@@ -206,11 +220,11 @@ void draw_sprites()
     int colour_number, colour_number1, colour_number2;
 
     struct sprite spr[sprite_count];
-    //ly -= 143;
-    //ly *= -1;
+
     for (int pixel = 0; pixel < 160; ++pixel) {
         int i;
 
+        // determine if any sprites fall on the current pixel
         for (i = 0; i < sprite_count; ++i) {
             if (pixel >= sprites_to_draw[i][1] - 8 && pixel < sprites_to_draw[i][1]) {
                 break;
@@ -220,6 +234,7 @@ void draw_sprites()
             continue;
         }
         count = 0;
+        // get all sprites which fall on the current pixel
         for (i = 0; i < sprite_count; ++i) {
             if (pixel >= sprites_to_draw[i][1] - 8 && pixel < sprites_to_draw[i][1]) {
                 spr[count].tile_number = sprites_to_draw[i][2];
@@ -229,10 +244,11 @@ void draw_sprites()
                 ++count;
             }
         }
-        sort_sprites(spr,count);
+        sort_sprites(spr,count); // sort sprites by x_pos
         u_int16 tile_address_top, tile_address_bottom, tile_address;
         int line, bit;
         u_int8 byte1, byte2;
+
         for (int i = 0; i < count; ++i) {
             y_pos = spr[i].y_pos;
             x_pos = spr[i].x_pos;
@@ -242,37 +258,44 @@ void draw_sprites()
             if (sprite_size == 8) {
                 tile_address = 0x8000 + tile_number * 16;
                 if (is_set(attributes,6)) {
-                    line = (y_pos - 8) - memory[0xff44] - 1;
+                    line = (y_pos - 8) - ly - 1;
                 } else {
-                    line = (y_pos - memory[0xff44] - 16) * -1;
+                    line = (y_pos - ly - 16) * -1;
                 }
-                line = line * 2;
+                line *= 2;
                 byte1 = memory[tile_address + line];
                 byte2 = memory[tile_address + line + 1];
             } else {
                 tile_address_top = 0x8000 + (tile_number & 0xFE) * 16;
                 tile_address_bottom = 0x8000 + (tile_number | 0x01) * 16;
-                if (memory[0xff44] >= (y_pos - 8)) {
+                if (ly >= (y_pos - 8)) {
                     if (is_set(attributes,6)) {
-                        line = y_pos - memory[0xff44] - 1;
+                        line = y_pos - ly - 1;
+                        line *= 2;
+                        byte1 = memory[tile_address_top + line];
+                        byte2 = memory[tile_address_top + line + 1];
                     } else {
-                        line = (y_pos - memory[0xff44] - 8) * -1;
+                        line = (y_pos - ly - 8) * -1;
+                        line *= 2;
+                        byte1 = memory[tile_address_bottom + line];
+                        byte2 = memory[tile_address_bottom + line + 1];
                     }
-                    byte1 = memory[tile_address_bottom + line];
-                    byte2 = memory[tile_address_bottom + line + 1];
                 } else {
                     if (is_set(attributes,6)) {
-                        line = y_pos - 16 - memory[0xff44] + 7;
+                        line = y_pos - 8 - ly - 1;
+                        line *= 2;
+                        byte1 = memory[tile_address_bottom + line];
+                        byte2 = memory[tile_address_bottom + line + 1];
                     } else {
-                        line = (abs(y_pos - 16) + memory[0xff44]) % 8;
+                        line = (y_pos - 16 - memory[0xff44]) * -1;
+                        line *= 2;
+                        byte1 = memory[tile_address_top + line];
+                        byte2 = memory[tile_address_top + line + 1];
                     }
-                    line = line * 2;
-                    byte1 = memory[tile_address_top + line];
-                    byte2 = memory[tile_address_top + line + 1];
                 }
             }
             if (is_set(attributes,5)) {
-                bit = abs(x_pos - pixel - 8);
+                bit = (x_pos - pixel - 8) * -1;
             } else {
                 bit = (x_pos - pixel - 1);
             }
@@ -324,6 +347,11 @@ void draw_sprites()
             if (ly < 0 || ly > 143) {
                 continue;
             }
+            if (priority) {
+                if (screen[pixel][ly][0] != 0xFF) {
+                    break;
+                }
+            }
             screen[pixel][ly][0] = red;
             screen[pixel][ly][1] = green;
             screen[pixel][ly][2] = blue;
@@ -364,7 +392,7 @@ void draw_frame()
     SDL_RenderPresent(renderer);
     SDL_FreeSurface(screen_surface);
     SDL_DestroyTexture(texture);
-    SDL_Delay(0);
+    SDL_Delay(10);
 }
 
 void switch_mode(int mode)
@@ -392,7 +420,8 @@ void compare_ly()
 
 void inc_ly()
 {
-    if ((++memory[0xff44]) == 154) {
+    ++memory[0xff44];
+    if ((memory[0xff44]) == 154) {
         memory[0xff44] = 0;
     }
 }
@@ -406,8 +435,11 @@ void update_lcd(int cycles)
 {
     if (!(is_set(memory[0xff40],7))) {
         interrupt_cycles[3] = 456;
+        interrupt_cycles[0] = 204;
+        interrupt_cycles[1] = 80;
+        interrupt_cycles[2] = 172;
         memory[0xff44] = 0;
-        switch_mode(1);
+        memory[0xff41] &= 0xf8;
         return;
     }
 
@@ -427,6 +459,7 @@ void update_lcd(int cycles)
             interrupt_cycles[2] = 172;
             switch_mode(0);
             if (memory[0xff44] < 144) {
+
                 update_graphics();
             }
             if (is_set(memory[0xff41],3)) {
@@ -436,7 +469,7 @@ void update_lcd(int cycles)
     } else if (mode == 0) {
         interrupt_cycles[0] -= cycles;
         if (interrupt_cycles[0] <= 0) {
-            if (memory[0xff44] < 143) {
+            if (memory[0xff44] < 144) {
                 interrupt_cycles[1] += interrupt_cycles[0];
                 interrupt_cycles[0] = 204;
                 switch_mode(2);
@@ -453,17 +486,16 @@ void update_lcd(int cycles)
             }
         }
     }
-    compare_ly();
 
     interrupt_cycles[3] -= cycles;
 
     if (interrupt_cycles[3] <= 0) {
         interrupt_cycles[3] += 456;
+        compare_ly();
         inc_ly();
     }
     if (memory[0xff44] == 144) {
         if (mode != 1) {
-            interrupt_cycles[1] += interrupt_cycles[0];
             interrupt_cycles[0] = 204;
             switch_mode(1);
             request_interrupt(0);

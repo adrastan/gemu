@@ -18,5 +18,6 @@ void inc_ly(void);
 int get_mode(void);
 void update_lcd(int);
 void sort_sprites(struct sprite[], int);
+void draw_blank(void);
 
 #endif // LCD_CONTROLLER_H
