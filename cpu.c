@@ -1,3 +1,7 @@
+#include <stdlib.h>
+#include <windows.h>
+#include <SDL2/SDL.h>
+
 #include "cpu.h"
 #include "opcodes.h"
 #include "memory.h"
@@ -5,11 +9,15 @@
 #include "lcd_controller.h"
 #include "timers.h"
 #include "interrupts.h"
-#include <stdlib.h>
-#include <windows.h>
+#include "joypad.h"
 
+int debug;
+int transfer_time;
+int transfer;
+int count;
 int delay;
 int halt;
+int fps_count;
 int ime = 1; // interrupt master enable
 u_int8 opcode;
 int counter;
@@ -50,19 +58,28 @@ int clock = 4194304;
 
 void start_cpu()
 {
-    FILE *fp = fopen("./tetris.gb", "rb");
+    FILE *fp = fopen("./supermarioland.gb", "rb");
     read_rom(fp);
     init_regs();
     set_clock_freq();
     switch_mode(2);
-    int debug = 0;
     char c;
-    int fps_count = 0;
-    char p[] = "0100";
+    char p[] = "0";
     int n = (int)strtol(p,NULL,16);
 
-    for (;;) {
-        while (fps_count <= 69905) {
+    SDL_Event event;
+    int program_running = 1;
+
+    while (program_running) {
+        while (fps_count <= 70224) {
+            while (SDL_PollEvent(&event)) {
+                switch (event.type) {
+                    case SDL_KEYDOWN:
+                    case SDL_KEYUP: update_joypad(&event.key); break;
+                    case SDL_QUIT: program_running = 0; break;
+                }
+            }
+            check_interrupts();
             counter = delay;
             delay = 0;
             if (!halt) {
@@ -75,7 +92,7 @@ void start_cpu()
             if (0) {
                 debug = 1;
             }
-            if (debug && memory[0xff44] >= 143) {
+            if (debug) {
                 print_flags();
                 c = getchar();
                 if ((c) == 'q') {
@@ -83,6 +100,12 @@ void start_cpu()
                     debug = 0;
                 } else if (c == '\n') {
 
+                } else if (c == 't') {
+                    getchar();
+                    print_tile_maps();
+                } else if (c == 'p') {
+                    getchar();
+                    print_tile_data();
                 } else {
                     p[0] = c;
                     p[1] = getchar();
@@ -96,10 +119,24 @@ void start_cpu()
             fps_count += counter;
             update_lcd(counter);
             update_timers(counter);
-            check_interrupts();
+            update_serial(counter);
         }
         draw_frame();
-        fps_count -= 69905;
+        fps_count -= 70224;
+    }
+}
+
+void update_serial(int cycles)
+{
+    if (is_set(memory[0xff02],7) && is_set(memory[0xff02],0)) {
+        transfer_time += counter;
+        if (transfer_time >= 4096) {
+            request_interrupt(3);
+            transfer_time = 0;
+            transfer = 0;
+            memory[0xff01] = 0xff;
+            memory[0xff02] &= ~(1 << 7);
+        }
     }
 }
 
@@ -180,6 +217,16 @@ int is_set(u_int8 byte, int bit)
     return byte & (1 << bit);
 }
 
+void set_bit(u_int8 *byte, int bit)
+{
+    *byte |= (1 << bit);
+}
+
+void reset_bit(u_int8 *byte, int bit)
+{
+    *byte &= ~(1 << bit);
+}
+
 void init_regs()
 {
     pc.PC = 0x0100;
@@ -219,17 +266,30 @@ void init_regs()
     write_memory(0xFF4A, 0x00);
     write_memory(0xFF4B, 0x00);
     write_memory(0xFFFF, 0x00);
-    write_memory(0xFF00, 0xCF);
+    memory[0xFF00] = 0xFF;
+    memory[0xFF02] = 0x7C;
 }
 
 void read_rom(FILE* fp)
 {
-    u_int8 arr[32768] = {0};
-    int n = fread(arr,1,32768,fp);
+    fseek(fp,0L,SEEK_END);
+    int size = ftell(fp);
+    rewind(fp);
+    u_int8 arr[size];
+    int n = fread(arr,1,size,fp);
     int j = 0;
-    for (int i = 0; i < 32768; ++i, ++j) {
+    for (int i = 0; i < 16384; ++i, ++j) {
         memory[j] = arr[i];
     }
+    j = 0;
+    for (int i = 0; i < size; ++i, ++j) {
+        cart_rom[j] = arr[i];
+    }
+    ram_enabled = memory[0x0149];
+    if (memory[0x147] == 0x05 || memory[0x147] == 0x06) {
+        MBC2 = 1;
+    }
+    fclose(fp);
 }
 
 void push(u_int16 word)
@@ -510,4 +570,21 @@ void print_flags()
     printf("ff0f: %hx\n", memory[0xff0f]);
     printf("ime: %d\n", ime);
     printf("ly: %d\n", memory[0xff44]);
+    printf("ff40: %hx\n", memory[0xff40]);
+    printf("ff01: %hx\n", memory[0xff01]);
+    printf("ff02: %hx\n", memory[0xff02]);
+}
+
+void print_tile_data()
+{
+    for (int i = 0x8000; i < 0x9800; ++i) {
+        printf("%hx ", memory[i]);
+    }
+}
+
+void print_tile_maps()
+{
+    for (int i = 0x9800; i < 0xA000; ++i) {
+        printf("%hx ", memory[i]);
+    }
 }

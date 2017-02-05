@@ -26,5 +26,8 @@ int is_set(u_int8,int);
 void push(u_int16);
 void set_delay(int);
 void print_flags(void);
+void set_bit(u_int8*,int);
+void reset_bit(u_int8*,int);
+void update_serial(int);
 
 #endif // CPU_H
