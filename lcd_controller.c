@@ -348,7 +348,13 @@ void draw_sprites()
                 continue;
             }
             if (priority) {
-                if (screen[pixel][ly][0] != 0xFF) {
+                u_int8 bg_pallete = memory[0xff47];
+                int pixel_col = screen[pixel][ly][0];
+                int colour_id1 = (bg_pallete & 0x0C) >> 2;
+                int colour_id2 = (bg_pallete & 0x30) >> 4;
+                int colour_id3 = (bg_pallete & 0xC0) >> 6;
+                if (pixel_col == get_bg_colour(colour_id1) || pixel_col == get_bg_colour(colour_id2) ||
+                    pixel_col == get_bg_colour(colour_id3)) {
                     break;
                 }
             }
@@ -357,6 +363,16 @@ void draw_sprites()
             screen[pixel][ly][2] = blue;
             break;
         }
+    }
+}
+
+int get_bg_colour(int colour_id)
+{
+    switch (colour_id) {
+        case 0: return 0xFF;
+        case 1: return 0xCC;
+        case 2: return 0x77;
+        default: return 0;
     }
 }
 
