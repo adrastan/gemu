@@ -1,6 +1,8 @@
 # gb-emu
-work in progress
+Gameboy emulator
+
+Currently playable with ~80% of games working
 
 still to do:
 
-sound, joypad and memory banking
+sound and battery support
