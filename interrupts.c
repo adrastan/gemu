@@ -70,21 +70,21 @@ void check_interrupts()
 void request_interrupt(int interrupt)
 {
     switch (interrupt) {
-        case 0: memory[0xff0f] |= (1 << 0); break;
-        case 1: memory[0xff0f] |= (1 << 1); break;
-        case 2: memory[0xff0f] |= (1 << 2); break;
-        case 3: memory[0xff0f] |= (1 << 3); break;
-        case 4: memory[0xff0f] |= (1 << 4); break;
+        case 0: set_bit(&memory[0xff0f],0); break;
+        case 1: set_bit(&memory[0xff0f],1); break;
+        case 2: set_bit(&memory[0xff0f],2); break;
+        case 3: set_bit(&memory[0xff0f],3); break;
+        case 4: set_bit(&memory[0xff0f],4); break;
     }
 }
 
 void discard_interrupt(int interrupt)
 {
     switch (interrupt) {
-        case 0: memory[0xff0f] &= ~(1 << 0); break;
-        case 1: memory[0xff0f] &= ~(1 << 1); break;
-        case 2: memory[0xff0f] &= ~(1 << 2); break;
-        case 3: memory[0xff0f] &= ~(1 << 3); break;
-        case 4: memory[0xff0f] &= ~(1 << 4); break;
+        case 0: reset_bit(&memory[0xff0f],0); break;
+        case 1: reset_bit(&memory[0xff0f],1); break;
+        case 2: reset_bit(&memory[0xff0f],2); break;
+        case 3: reset_bit(&memory[0xff0f],3); break;
+        case 4: reset_bit(&memory[0xff0f],4); break;
     }
 }
