@@ -11,7 +11,12 @@
 #include "interrupts.h"
 #include "joypad.h"
 
+char * title = NULL; // title of the rom
+char * file_name = NULL; // absolute file location
+char * save_file = NULL; // name of the rom with .SAVE extension
 int debug;
+int save_request;
+int load_request;
 int transfer_time;
 int transfer;
 int count;
@@ -19,8 +24,8 @@ int delay;
 int halt;
 int fps_count;
 int ime = 1; // interrupt master enable
-u_int8 opcode;
 int counter;
+u_int8 opcode;
 int op_cycles[256] = {4,12,8,8,4,4,8,4,20,8,8,8,4,4,8,4,
                      4,12,8,8,4,4,8,4,12,8,8,8,4,4,8,4,
                      12,12,8,8,4,4,8,4,12,8,8,8,4,4,8,4,
@@ -54,11 +59,17 @@ int pre_cycles[256] = {8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
                        8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
                        8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8};
 
-int clock = 4194304;
+//int clock = 4194304;
+const double FRAMES_PER_SECOND = 60;
+int cap;
 
 void start_cpu()
 {
-    FILE *fp = fopen("./supermarioland.gb", "rb");
+    FILE *fp = fopen(file_name, "rb");
+    if (fp == NULL) {
+        printf("game not found");
+        return;
+    }
     read_rom(fp);
     init_regs();
     set_clock_freq();
@@ -66,11 +77,13 @@ void start_cpu()
     char c;
     char p[] = "0";
     int n = (int)strtol(p,NULL,16);
-
     SDL_Event event;
     int program_running = 1;
+    double start_time, end_time;
+    cap = 1;
 
     while (program_running) {
+        start_time = SDL_GetTicks();
         while (fps_count <= 70224) {
             while (SDL_PollEvent(&event)) {
                 switch (event.type) {
@@ -100,12 +113,6 @@ void start_cpu()
                     debug = 0;
                 } else if (c == '\n') {
 
-                } else if (c == 't') {
-                    getchar();
-                    print_tile_maps();
-                } else if (c == 'p') {
-                    getchar();
-                    print_tile_data();
                 } else {
                     p[0] = c;
                     p[1] = getchar();
@@ -122,6 +129,12 @@ void start_cpu()
             update_serial(counter);
         }
         draw_frame();
+        end_time = SDL_GetTicks();
+        if ((end_time - start_time) < 1000.0 / FRAMES_PER_SECOND) {
+            if (cap) {
+                SDL_Delay((1000.0 / FRAMES_PER_SECOND) - (end_time - start_time));
+            }
+        }
         fps_count -= 70224;
     }
 }
@@ -227,6 +240,7 @@ void reset_bit(u_int8 *byte, int bit)
     *byte &= ~(1 << bit);
 }
 
+// initializes registers
 void init_regs()
 {
     pc.PC = 0x0100;
@@ -270,6 +284,7 @@ void init_regs()
     memory[0xFF02] = 0x7C;
 }
 
+// reads the contents of rom file to memory
 void read_rom(FILE* fp)
 {
     fseek(fp,0L,SEEK_END);
@@ -277,6 +292,9 @@ void read_rom(FILE* fp)
     rewind(fp);
     u_int8 arr[size];
     int n = fread(arr,1,size,fp);
+    if (n < 0) {
+        exit(0);
+    }
     int j = 0;
     for (int i = 0; i < 16384; ++i, ++j) {
         memory[j] = arr[i];
@@ -288,6 +306,9 @@ void read_rom(FILE* fp)
     ram_enabled = memory[0x0149];
     if (memory[0x147] == 0x05 || memory[0x147] == 0x06) {
         MBC2 = 1;
+    } else if (memory[0x147] >= 0x0F && memory[0x147] <= 0x13) {
+        MBC3 = 1;
+
     }
     fclose(fp);
 }
@@ -573,18 +594,117 @@ void print_flags()
     printf("ff40: %hx\n", memory[0xff40]);
     printf("ff01: %hx\n", memory[0xff01]);
     printf("ff02: %hx\n", memory[0xff02]);
+    printf("9dc1: %d\n", memory[0x9dc1]);
 }
 
-void print_tile_data()
+// save game to file
+void save_state()
 {
-    for (int i = 0x8000; i < 0x9800; ++i) {
-        printf("%hx ", memory[i]);
-    }
+    FILE *st = fopen(save_file, "wb");
+    u_int8 *bytes = get_state();
+    fwrite(bytes,1,0x10000+20,st);
+    fflush(st);
+    fclose(st);
+    save_request = 0;
 }
 
-void print_tile_maps()
+// load game save file
+void load_state()
 {
-    for (int i = 0x9800; i < 0xA000; ++i) {
-        printf("%hx ", memory[i]);
+    FILE *ls = fopen(save_file, "rb");
+    if (ls == NULL) {
+        return;
     }
+    u_int8 bytes[0x10000+20];
+    fread(bytes,1,0x10000+20,ls);
+    for (int i = 0; i < 0x8000; ++i) {
+        memory[0x8000+i] = bytes[i];
+    }
+    for (int i = 0x8000; i < 0x10000; ++i) {
+        cart_ram[i-0x8000] = bytes[i];
+    }
+    pc.byte.L = bytes[0x10000];
+    pc.byte.H = bytes[0x10001];
+    sp.byte.L = bytes[0x10002];
+    sp.byte.H = bytes[0x10003];
+    regs.byte.A = bytes[0x10004];
+    regs.byte.F = bytes[0x10005];
+    regs.byte.B = bytes[0x10006];
+    regs.byte.C = bytes[0x10007];
+    regs.byte.D = bytes[0x10008];
+    regs.byte.E = bytes[0x10009];
+    regs.byte.H = bytes[0x1000A];
+    regs.byte.L = bytes[0x1000B];
+    halt = bytes[0x1000C];
+    ime = bytes[0x1000D];
+    bank = bytes[0x1000E];
+    ram_bank = bytes[0x1000F];
+    ram_enabled = bytes[0x10010];
+    bank_mode = bytes[0x10011];
+    fclose(ls);
+    interrupt_cycles[0] = 204;
+    interrupt_cycles[1] = 80;
+    interrupt_cycles[2] = 172;
+    load_request = 0;
+}
+
+// returns a pointer to the current state of the emulator
+u_int8* get_state()
+{
+    static u_int8 bytes[0x10000+20];
+
+    for (int i = 0; i < 0x8000; ++i) {
+        bytes[i] = memory[0x8000+i];
+    }
+    for (int i = 0x8000; i < 0x10000; ++i) {
+        bytes[i] = cart_ram[i-0x8000];
+    }
+
+    bytes[0x10000] = pc.byte.L;
+    bytes[0x10001] = pc.byte.H;
+    bytes[0x10002] = sp.byte.L;
+    bytes[0x10003] = sp.byte.H;
+    bytes[0x10004] = regs.byte.A;
+    bytes[0x10005] = regs.byte.F;
+    bytes[0x10006] = regs.byte.B;
+    bytes[0x10007] = regs.byte.C;
+    bytes[0x10008] = regs.byte.D;
+    bytes[0x10009] = regs.byte.E;
+    bytes[0x1000A] = regs.byte.H;
+    bytes[0x1000B] = regs.byte.L;
+    bytes[0x1000C] = halt;
+    bytes[0x1000D] = ime;
+    bytes[0x1000E] = bank;
+    bytes[0x1000F] = ram_bank;
+    bytes[0x10010] = ram_enabled;
+    bytes[0x10011] = bank_mode;
+
+    return bytes;
+}
+
+// resets the emulator
+void restart()
+{
+    for (int i = 0x8000; i < 0x10000; ++i) {
+        memory[i] = 0;
+        cart_ram[i-0x8000] = 0;
+    }
+    set_clock_freq();
+    switch_mode(2);
+    init_regs();
+    debug = 0;
+    save_request = 0;
+    load_request = 0;
+    transfer_time = 0;
+    transfer = 0;
+    count = 0;
+    delay = 0;
+    halt = 0;
+    fps_count = 0;
+    ime = 1;
+    counter = 0;
+    interrupt_cycles[0] = 204;
+    interrupt_cycles[1] = 80;
+    interrupt_cycles[2] = 172;
+    interrupt_cycles[3] = 456;
 }

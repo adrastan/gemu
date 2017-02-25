@@ -5,6 +5,17 @@
 
 #include "cpu_types.h"
 
+extern int debug;
+extern int save_request;
+extern int load_request;
+extern int cap;
+extern int ime;
+extern int halt;
+extern int counter;
+extern char * file_name;
+extern char * title;
+extern char * save_file;
+
 void start_cpu(void);
 u_int8 test_z(void);
 u_int8 test_n(void);
@@ -29,5 +40,8 @@ void print_flags(void);
 void set_bit(u_int8*,int);
 void reset_bit(u_int8*,int);
 void update_serial(int);
+void save_state(void);
+void load_state(void);
+u_int8* get_state(void);
 
 #endif // CPU_H
