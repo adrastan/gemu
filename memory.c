@@ -8,6 +8,12 @@ u_int8 ram_bank = 0;
 int ram_enabled = 0;
 int bank_mode = 0;
 int MBC2;
+int MBC3;
+u_int8 rtc_s;
+u_int8 rtc_m;
+u_int8 rtc_h;
+u_int8 rtc_dl;
+u_int8 rtc_dh;
 
 void do_banking(u_int16 address, u_int8 byte)
 {
@@ -17,6 +23,15 @@ void do_banking(u_int16 address, u_int8 byte)
             if ((address & (1 << 8)) != 0) {
                 return;
             }
+        }
+        if (MBC3) {
+            if (byte == 0x0A) {
+                ram_enabled = 1;
+            }
+            if (byte == 0) {
+                ram_enabled = 0;
+            }
+            return;
         }
         byte = byte & 0x0F;
         if (byte == 0x0A) {
@@ -39,6 +54,13 @@ void do_banking(u_int16 address, u_int8 byte)
             }
             return;
         }
+        if (MBC3) {
+            bank = byte & 0x7F;
+            if (bank == 0) {
+                ++bank;
+            }
+            return;
+        }
         u_int8 lower_5 = byte & 0x1F;
         bank = bank & 0xE0;
         bank |= lower_5;
@@ -50,6 +72,15 @@ void do_banking(u_int16 address, u_int8 byte)
     // select rom bank upper
     if (address >= 0x4000 && address <= 0x5FFF) {
         if (MBC2) {
+            return;
+        }
+        if (MBC3) {
+            if (byte >= 0 && byte <= 3) {
+                ram_bank = byte;
+            }
+            if (byte >= 0x8 && byte <= 0xC) {
+                ram_bank = byte;
+            }
             return;
         }
         if (bank_mode == 0) {
@@ -85,6 +116,7 @@ void do_banking(u_int16 address, u_int8 byte)
     }
 }
 
+// transfer sprite data to oam memory
 void do_dma(u_int8 byte)
 {
     int b = (int)byte << 8;
@@ -94,5 +126,29 @@ void do_dma(u_int8 byte)
         ++c;
     }
     return;
+}
+
+// returns real-time clock
+u_int8 get_rtc()
+{
+    switch (ram_bank) {
+        case 0x8: return rtc_s;
+        case 0x9: return rtc_m;
+        case 0xA: return rtc_h;
+        case 0xB: return rtc_dl;
+        case 0xC: return rtc_dh;
+    }
+}
+
+// sets real-time clock
+void write_rtc(u_int8 regi, u_int8 byte)
+{
+    switch (regi) {
+        case 0x8: rtc_s = byte;
+        case 0x9: rtc_m = byte;
+        case 0xA: rtc_h = byte;
+        case 0xB: rtc_dl = byte;
+        case 0xC: rtc_dh = byte;
+    }
 }
 
