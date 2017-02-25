@@ -5,6 +5,7 @@
 
 u_int8 joypad = 0xFF;
 
+// returns the current state of the joypad register
 u_int8 joypad_state()
 {
     if (!is_set(memory[0xff00],4)) {
@@ -20,11 +21,14 @@ u_int8 joypad_state()
     return 0xff;
 }
 
+// updates contents of joypad register with user input
 void update_joypad(SDL_KeyboardEvent *key)
 {
     switch (key->type) {
         case SDL_KEYDOWN:
             switch (key->keysym.sym) {
+                case SDLK_KP_PLUS: cap = 0; break;
+                case SDLK_q: debug = 1; break;
                 case SDLK_LEFT: if (is_set(joypad,1)) { request_interrupt(4); }
                     reset_bit(&joypad,1); break;
                 case SDLK_RIGHT: if (is_set(joypad,0)) { request_interrupt(4); }
@@ -41,9 +45,13 @@ void update_joypad(SDL_KeyboardEvent *key)
                     reset_bit(&joypad,4); break;
                 case SDLK_RSHIFT: if (is_set(joypad,6)) { request_interrupt(4); }
                     reset_bit(&joypad,6); break;
+                case SDLK_s: save_request = 1; break;
+                case SDLK_l: load_request = 1; break;
+                case SDLK_r: restart(); break;
             } break;
         case SDL_KEYUP:
             switch (key->keysym.sym) {
+                case SDLK_KP_PLUS: cap = 1; break;
                 case SDLK_LEFT: set_bit(&joypad,1); break;
                 case SDLK_RIGHT: set_bit(&joypad,0); break;
                 case SDLK_UP: set_bit(&joypad,2); break;
