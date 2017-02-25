@@ -3,10 +3,6 @@
 #include "cpu.h"
 #include "registers.h"
 
-extern int ime;
-extern int counter;
-extern int halt;
-
 void check_interrupts()
 {
     u_int8 i_enable = read_memory(0xffff); // get interrupt enable register
