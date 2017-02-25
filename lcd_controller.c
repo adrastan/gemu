@@ -19,11 +19,14 @@ u_int8 sprites[40][4];
 
 void update_graphics()
 {
+    // if background is enabled draw tiles otherwise
+    // draw blank line
     if (memory[0xff40] & 0x1) {
         draw_tiles();
     } else {
         draw_blank();
     }
+    // if sprites are enabled draw sprites
     if (memory[0xff40] & 0x2) {
         draw_sprites();
     }
@@ -53,11 +56,15 @@ void draw_tiles()
     u_int8 ly = memory[0xff44];
     u_int8 lcdc = memory[0xff40];
 
+    // check if window is enabled and the current scanline
+    // falls on the window
     if (is_set(lcdc,5)) {
         if (winy <= ly) {
             using_window = 1;
         }
     }
+
+    // set window tile map
     if (using_window) {
         if (is_set(lcdc,6)) {
             win_map = 0x9C00;
@@ -65,11 +72,15 @@ void draw_tiles()
             win_map = 0x9800;
         }
     }
+
+    // set background tile map
     if (is_set(lcdc,3)) {
         bg_map = 0x9C00;
     } else {
         bg_map = 0x9800;
     }
+
+    // set tile data address
     if (is_set(lcdc,4)) {
         tile_data = 0x8000;
     } else {
@@ -82,6 +93,7 @@ void draw_tiles()
 
     for (int pixel = 0; pixel < 160; ++pixel) {
 
+        // check if current pixel falls on the window
         if (using_window && pixel >= winx) {
             x_pos = pixel - winx;
             y_pos = ly - winy;
@@ -249,12 +261,14 @@ void draw_sprites()
         int line, bit;
         u_int8 byte1, byte2;
 
+        // go through each sprite on the current pixel
         for (int i = 0; i < count; ++i) {
             y_pos = spr[i].y_pos;
             x_pos = spr[i].x_pos;
             tile_number = spr[i].tile_number;
             attributes = spr[i].attributes;
 
+            // if sprite size is 8x8
             if (sprite_size == 8) {
                 tile_address = 0x8000 + tile_number * 16;
                 if (is_set(attributes,6)) {
@@ -265,10 +279,13 @@ void draw_sprites()
                 line *= 2;
                 byte1 = memory[tile_address + line];
                 byte2 = memory[tile_address + line + 1];
+            // sprite size is 8x16
             } else {
                 tile_address_top = 0x8000 + (tile_number & 0xFE) * 16;
                 tile_address_bottom = 0x8000 + (tile_number | 0x01) * 16;
+                // if scanline falls on the bottom tile
                 if (ly >= (y_pos - 8)) {
+                    // check if the sprite is flipped vertically
                     if (is_set(attributes,6)) {
                         line = y_pos - ly - 1;
                         line *= 2;
@@ -280,7 +297,9 @@ void draw_sprites()
                         byte1 = memory[tile_address_bottom + line];
                         byte2 = memory[tile_address_bottom + line + 1];
                     }
+                // scanline falls on the top tile
                 } else {
+                    // check if sprite is flipped vertically
                     if (is_set(attributes,6)) {
                         line = y_pos - 8 - ly - 1;
                         line *= 2;
@@ -294,6 +313,7 @@ void draw_sprites()
                     }
                 }
             }
+            // check if sprite is flipped horizontally
             if (is_set(attributes,5)) {
                 bit = (x_pos - pixel - 8) * -1;
             } else {
@@ -391,6 +411,7 @@ void sort_sprites(struct sprite spr[], int n)
     }
 }
 
+// renders the next frame
 void draw_frame()
 {
     int count = 0;
@@ -408,9 +429,9 @@ void draw_frame()
     SDL_RenderPresent(renderer);
     SDL_FreeSurface(screen_surface);
     SDL_DestroyTexture(texture);
-    SDL_Delay(10);
 }
 
+// switch current lcd mode
 void switch_mode(int mode)
 {
     memory[0xff41] &= 0xfc;
@@ -422,6 +443,7 @@ void switch_mode(int mode)
     }
 }
 
+// compare lyc and ly registers
 void compare_ly()
 {
     if (memory[0xff45] == memory[0xff44]) {
@@ -434,6 +456,7 @@ void compare_ly()
     }
 }
 
+// increments ly register
 void inc_ly()
 {
     ++memory[0xff44];
@@ -449,6 +472,7 @@ int get_mode()
 
 void update_lcd(int cycles)
 {
+    // reset lcd values if screen is disabled
     if (!(is_set(memory[0xff40],7))) {
         interrupt_cycles[3] = 456;
         interrupt_cycles[0] = 204;
@@ -475,7 +499,6 @@ void update_lcd(int cycles)
             interrupt_cycles[2] = 172;
             switch_mode(0);
             if (memory[0xff44] < 144) {
-
                 update_graphics();
             }
             if (is_set(memory[0xff41],3)) {
@@ -510,10 +533,18 @@ void update_lcd(int cycles)
         compare_ly();
         inc_ly();
     }
+    // last scanline so switch to mode 1 and generate
+    // vblank interrupt
     if (memory[0xff44] == 144) {
         if (mode != 1) {
             interrupt_cycles[0] = 204;
             switch_mode(1);
+            if (save_request) {
+                save_state();
+            }
+            if (load_request) {
+                load_state();
+            }
             request_interrupt(0);
             if (is_set(memory[0xff41],4)) {
                 request_interrupt(1);

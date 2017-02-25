@@ -8,6 +8,8 @@ struct sprite {
     u_int8 attributes;
 };
 
+extern int interrupt_cycles[];
+
 void update_graphics(void);
 void draw_tiles(void);
 void draw_sprites(void);
@@ -19,5 +21,6 @@ int get_mode(void);
 void update_lcd(int);
 void sort_sprites(struct sprite[], int);
 void draw_blank(void);
+int get_bg_colour(int);
 
 #endif // LCD_CONTROLLER_H
