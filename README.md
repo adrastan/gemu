@@ -7,7 +7,7 @@ Still to do:
 
 * sound and battery support
 
-** Controls **
+**Controls**
 
 Start: Enter
 Select: RShift
@@ -18,6 +18,6 @@ Reset: R
 Save: S
 Load: L
 
-** How to **
+**How to**
 
 drag rom onto exe or run program with rom location as argument
