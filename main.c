@@ -26,6 +26,40 @@ int main(int argc, char** args)
             printf("Window could not be created! SDL_Error: %s\n", SDL_GetError());
         } else {
             renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+            char * file_location = args[1];
+            if (file_location == NULL) {
+                puts("file not found");
+                return 0;
+            }
+
+            // go to start of file name
+            while (*file_location != '\0') {
+                ++file_location;
+            }
+            while (*file_location != '\\') {
+                --file_location;
+            }
+            ++file_location;
+
+            file_name = file_location;
+            char a[100];
+            char * b = file_name;
+            int i;
+
+            // copy rom title to a
+            for (i = 0; *b != '.'; ++i) {
+                a[i] = *b;
+                ++b;
+            }
+            a[i] = '\0';
+
+            // create save file extension
+            char c[100];
+            strcpy(c,a);
+            title = a;
+            strcat(c,".SAVE");
+            save_file = c;
+
             start_cpu();
         }
     }
