@@ -9,13 +9,13 @@ Still to do:
 
 **Controls**
 
-Start: Enter
-Select: RShift
-A: Z
-B: X
-Speedup: Numpad +
-Reset: R
-Save: S
+Start: Enter  
+Select: RShift  
+A: Z  
+B: X  
+Speedup: Numpad +  
+Reset: R  
+Save: S  
 Load: L
 
 **How to**
