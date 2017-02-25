@@ -18,6 +18,6 @@ Reset: R
 Save: S  
 Load: L
 
-**How to**
+**How to run**
 
 drag rom onto exe or run program with rom location as argument
