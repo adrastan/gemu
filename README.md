@@ -6,6 +6,7 @@ Currently playable with most games working. Requires SDL2.dll
 Still to do:
 
 * sound and battery support
+* interface
 
 **Controls**
 
