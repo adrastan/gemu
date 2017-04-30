@@ -1,12 +1,11 @@
 # gb-emu
 Gameboy emulator
 
-Currently playable with most games working. Requires SDL2.dll
+Currently playable with most games working. Requires SDL2.dll in the same folder as the exe.
 
 Still to do:
 
 * sound and battery support
-* interface
 
 **Controls**
 
@@ -19,6 +18,4 @@ Reset: R
 Save: S  
 Load: L
 
-**How to run**
 
-drag rom onto exe or run program with rom as argument
