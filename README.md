@@ -1,7 +1,7 @@
 # gb-emu
-Gameboy emulator
+Gameboy emulator with a focus on accuracy.
 
-Currently playable with most games working. Requires SDL2.dll in the same folder as the exe.
+Currently playable with most games working. Uses SDL for video and input so SDL2.dll is required.
 
 Still to do:
 
