@@ -7,7 +7,7 @@ Still to do:
 
 * sound and battery support
 
-**Controls**
+## Controls
 
 Start: Enter  
 Select: RShift  
