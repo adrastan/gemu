@@ -1,7 +1,7 @@
 # gb-emu
 Gameboy emulator with a focus on accuracy.
 
-Currently playable with most games working. Uses SDL for video and input so SDL2.dll is required.
+Currently playable with most games working. Uses SDL for video and input so SDL libraries are required.
 
 Still to do:
 
