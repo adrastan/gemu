@@ -20,3 +20,4 @@ Load: L
 
 ## Download
 [Windows](http://s000.tinyupload.com/download.php?file_id=01725140414524668502&t=0172514041452466850225167)
+[Linux](http://s000.tinyupload.com/download.php?file_id=16280143653076023967&t=1628014365307602396722219)
