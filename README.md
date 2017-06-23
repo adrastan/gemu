@@ -6,6 +6,7 @@ Currently playable with most games working. Uses SDL for video and input so SDL 
 Still to do:
 
 * sound and battery support
+* colour mode
 
 ## Controls
 
