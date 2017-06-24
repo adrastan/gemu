@@ -15,7 +15,14 @@ extern int counter;
 extern char * file_name;
 extern char * title;
 extern char * save_file;
+extern int pre_cycles[];
+extern int op_cycles[];
+extern u_int8 opcode;
+extern char * title;
+extern char * save_file;
+extern char * file_location;
 
+void prepare_file(char*);
 void start_cpu(void);
 u_int8 test_z(void);
 u_int8 test_n(void);

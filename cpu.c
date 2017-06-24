@@ -11,9 +11,9 @@
 #include "interrupts.h"
 #include "joypad.h"
 
-char * title = NULL; // title of the rom
-char * file_name = NULL; // absolute file location
-char * save_file = NULL; // name of the rom with .SAVE extension
+char * title = NULL; // title of the rom without extension
+char * file_location = NULL; // absolute file location
+char * save_file = NULL; // title with .SAVE extension
 int debug;
 int save_request;
 int load_request;
@@ -65,7 +65,7 @@ int cap;
 
 void start_cpu()
 {
-    FILE *fp = fopen(file_name, "rb");
+    FILE *fp = fopen(file_location, "rb");
     if (fp == NULL) {
         printf("game not found");
         return;

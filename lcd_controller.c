@@ -1,4 +1,4 @@
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -7,6 +7,11 @@
 #include "lcd_controller.h"
 #include "interrupts.h"
 
+#define MODE_0 204
+#define MODE_2 80
+#define MODE_3 172
+#define TOTAL 456
+
 extern SDL_Window* window;
 extern SDL_Surface* screen_surface;
 extern SDL_Texture* texture;
@@ -14,7 +19,7 @@ extern SDL_Renderer* renderer;
 
 u_int8 screen[160][144][3] = {};
 u_int8 pixels[160*144*3];
-int interrupt_cycles[4] = {204, 80, 172, 456};
+int interrupt_cycles[4] = {MODE_0, MODE_2, MODE_3, TOTAL};
 u_int8 sprites[40][4];
 
 void update_graphics()
@@ -108,8 +113,10 @@ void draw_tiles()
 
         short tile_num;
 
+        // using tile numbers 0-255
         if (unsign) {
             tile_num = (u_int8)memory[tile_address];
+        // using tile numbers -128-127
         } else {
             tile_num = (signed char)memory[tile_address];
         }
@@ -122,15 +129,18 @@ void draw_tiles()
             tile_location += (tile_num + 128) * 16;
         }
 
+        // get current line and their bytes from memory
         u_int8 line = y_pos % 8;
-        line = line * 2;
+        line *= 2;
         u_int8 byte1 = memory[tile_location + line];
         u_int8 byte2 = memory[tile_location + line + 1];
 
+        // bit 7 is leftmost pixel
         int bit = x_pos % 8;
-        bit = bit - 7;
-        bit = bit * -1;
+        bit -= 7;
+        bit *= -1;
 
+        // colour number is bit of first byte and second byte
         int colour_number1 = (byte1 >> bit) & 1;
         int colour_number2 = (byte2 >> bit) & 1;
         int colour_number = (colour_number2 << 1) | colour_number1;
@@ -142,6 +152,7 @@ void draw_tiles()
         u_int8 pallete = memory[0xff47];
         int colour_id;
 
+        // get correct colour from pallete
         switch (colour_number) {
             case 0: colour_id = pallete & 0x03; break;
             case 1: colour_id = (pallete & 0x0C) >> 2; break;
@@ -151,6 +162,7 @@ void draw_tiles()
 
         char shade;
 
+        // shade for current pixel
         if (colour_id == 0) {
             shade = 'W';
         } else if (colour_id == 1) {
@@ -171,6 +183,7 @@ void draw_tiles()
         if (ly < 0 || ly > 143) {
             continue;
         }
+        // set pixel value
         screen[pixel][ly][0] = red;
         screen[pixel][ly][1] = green;
         screen[pixel][ly][2] = blue;
@@ -367,6 +380,8 @@ void draw_sprites()
             if (ly < 0 || ly > 143) {
                 continue;
             }
+            // determines whether sprite is behind the background and changes
+            // colours accordingly
             if (priority) {
                 u_int8 bg_pallete = memory[0xff47];
                 int pixel_col = screen[pixel][ly][0];
@@ -378,6 +393,7 @@ void draw_sprites()
                     break;
                 }
             }
+            // set pixel value
             screen[pixel][ly][0] = red;
             screen[pixel][ly][1] = green;
             screen[pixel][ly][2] = blue;
@@ -396,6 +412,9 @@ int get_bg_colour(int colour_id)
     }
 }
 
+// sort sprites according to x values.
+// sprites closer to the left will have higher priority
+// and appear above the others.
 void sort_sprites(struct sprite spr[], int n)
 {
     struct sprite temp;
@@ -415,6 +434,7 @@ void sort_sprites(struct sprite spr[], int n)
 void draw_frame()
 {
     int count = 0;
+    // loop through and draw each pixel
     for (int i = 0; i < 144; ++i) {
         for (int j = 0; j < 160; ++j) {
             pixels[count++] = screen[j][i][0];
@@ -474,10 +494,10 @@ void update_lcd(int cycles)
 {
     // reset lcd values if screen is disabled
     if (!(is_set(memory[0xff40],7))) {
-        interrupt_cycles[3] = 456;
-        interrupt_cycles[0] = 204;
-        interrupt_cycles[1] = 80;
-        interrupt_cycles[2] = 172;
+        interrupt_cycles[3] = TOTAL;
+        interrupt_cycles[0] = MODE_0;
+        interrupt_cycles[1] = MODE_2;
+        interrupt_cycles[2] = MODE_3;
         memory[0xff44] = 0;
         memory[0xff41] &= 0xf8;
         return;
@@ -485,18 +505,20 @@ void update_lcd(int cycles)
 
     int mode = get_mode();
 
+    // currently in mode 2
     if (mode == 2) {
         interrupt_cycles[1] -= cycles;
         if (interrupt_cycles[1] <= 0) {
             interrupt_cycles[2] += interrupt_cycles[1];
-            interrupt_cycles[1] = 80;
+            interrupt_cycles[1] = MODE_2;
             switch_mode(3);
         }
+    // currently in mode 3
     } else if (mode == 3) {
         interrupt_cycles[2] -= cycles;
         if (interrupt_cycles[2] <= 0) {
             interrupt_cycles[0] += interrupt_cycles[2];
-            interrupt_cycles[2] = 172;
+            interrupt_cycles[2] = MODE_3;
             switch_mode(0);
             if (memory[0xff44] < 144) {
                 update_graphics();
@@ -505,18 +527,20 @@ void update_lcd(int cycles)
                 request_interrupt(1);
             }
         }
+    // currently in mode 0
     } else if (mode == 0) {
         interrupt_cycles[0] -= cycles;
         if (interrupt_cycles[0] <= 0) {
             if (memory[0xff44] < 144) {
                 interrupt_cycles[1] += interrupt_cycles[0];
-                interrupt_cycles[0] = 204;
+                interrupt_cycles[0] = MODE_0;
                 switch_mode(2);
                 if (is_set(memory[0xff41],5)) {
                     request_interrupt(1);
                 }
             }
         }
+    // currently in vblank ie mode 1
     } else {
         if (memory[0xff44] == 0) {
             switch_mode(2);
@@ -528,8 +552,9 @@ void update_lcd(int cycles)
 
     interrupt_cycles[3] -= cycles;
 
+    // increments ly every cycle through all modes
     if (interrupt_cycles[3] <= 0) {
-        interrupt_cycles[3] += 456;
+        interrupt_cycles[3] += TOTAL;
         compare_ly();
         inc_ly();
     }
@@ -537,7 +562,7 @@ void update_lcd(int cycles)
     // vblank interrupt
     if (memory[0xff44] == 144) {
         if (mode != 1) {
-            interrupt_cycles[0] = 204;
+            interrupt_cycles[0] = MODE_0;
             switch_mode(1);
             if (save_request) {
                 save_state();

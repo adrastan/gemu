@@ -1,16 +1,9 @@
+#include <stdlib.h>
 #include "opcodes.h"
 #include "pre_opcodes.h"
 #include "memory.h"
 #include "cpu.h"
 #include "registers.h"
-#include <stdlib.h>
-
-extern int counter;
-extern int pre_cycles[];
-extern int op_cycles[];
-extern int ime;
-extern u_int8 opcode;
-extern int halt;
 
 // LD BC, d16
 void opcode_01()
