@@ -22,3 +22,5 @@ Load: L
 ## Download
 [Windows](http://s000.tinyupload.com/download.php?file_id=01725140414524668502&t=0172514041452466850225167) | 
 [Linux](http://s000.tinyupload.com/download.php?file_id=16280143653076023967&t=1628014365307602396722219)
+
+No installation required for Windows, just extract and run. On Linux, run "sudo apt-get install libsdl2-2.0" if running Ubuntu or "sudo yum install SDL2" if running Fedora.
