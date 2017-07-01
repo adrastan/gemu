@@ -21,6 +21,7 @@ extern int bank_mode;
 extern int start_transfer;
 extern int fps_count;
 extern int transfer;
+
 void do_banking(u_int16, u_int8);
 void do_dma(u_int8);
 u_int8 get_rtc(void);

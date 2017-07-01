@@ -3,12 +3,14 @@
 u_int8 memory[MEM_SIZE] = {0}; // 16-bit memory
 u_int8 cart_rom[4194304] = {0};
 u_int8 cart_ram[32768] = {0};
-u_int8 bank = 1;
-u_int8 ram_bank = 0;
-int ram_enabled = 0;
-int bank_mode = 0;
-int MBC2;
-int MBC3;
+u_int8 bank = 1; // current memory bank
+u_int8 ram_bank = 0; // current ram bank
+int ram_enabled = 0; // enable/disable ram
+int bank_mode = 0; // banking mode
+int MBC2; // memory bank controller 2
+int MBC3; // memory bank controller 3
+
+// real-time clock registers
 u_int8 rtc_s;
 u_int8 rtc_m;
 u_int8 rtc_h;
@@ -20,7 +22,8 @@ void do_banking(u_int16 address, u_int8 byte)
     // RAM enable
     if (address >= 0 && address <= 0x1FFF) {
         if (MBC2) {
-            if ((address & (1 << 8)) != 0) {
+            // lsb of upper address byte must not be zero to enable/disable RAM
+            if ((address & (1 << 8))) {
                 return;
             }
         }
@@ -33,7 +36,7 @@ void do_banking(u_int16 address, u_int8 byte)
             }
             return;
         }
-        byte = byte & 0x0F;
+        byte &= 0x0F;
         if (byte == 0x0A) {
             ram_enabled = 1;
         } else {
@@ -62,7 +65,7 @@ void do_banking(u_int16 address, u_int8 byte)
             return;
         }
         u_int8 lower_5 = byte & 0x1F;
-        bank = bank & 0xE0;
+        bank &= 0xE0;
         bank |= lower_5;
         if (bank == 0 || bank == 0x20 || bank == 0x40 || bank == 0x60) {
             ++bank;
@@ -75,17 +78,14 @@ void do_banking(u_int16 address, u_int8 byte)
             return;
         }
         if (MBC3) {
-            if (byte >= 0 && byte <= 3) {
-                ram_bank = byte;
-            }
-            if (byte >= 0x8 && byte <= 0xC) {
+            if ((byte >= 0 && byte <= 3) || (byte >= 0x8 && byte <= 0xC)) {
                 ram_bank = byte;
             }
             return;
         }
         if (bank_mode == 0) {
             u_int8 upper_2 = byte & 0x60;
-            bank = bank & 0x9F;
+            bank &= 0x9F;
             bank |= (upper_2);
             if (bank == 0 || bank == 0x20 || bank == 0x40 || bank == 0x60) {
                 ++bank;
@@ -104,10 +104,10 @@ void do_banking(u_int16 address, u_int8 byte)
         if (MBC2) {
             return;
         }
-        byte = byte & 1;
+        byte &= 1;
         bank_mode = byte;
         if (bank_mode == 1) {
-            bank = bank & 0x9F;
+            bank &= 0x9F;
         }
         if (bank_mode == 0) {
             ram_bank = 0;
