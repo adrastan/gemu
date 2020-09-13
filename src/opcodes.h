@@ -1,3 +1,21 @@
+/*
+ * Gemu - Nintendo Game Boy Emulator
+ * Copyright (C) 2017  Alex Dempsey
+
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/
+ *
+ */
+
 #ifndef OPCODES_H
 #define OPCODES_H
 #include "registers.h"
@@ -6,151 +24,74 @@
 static inline void INC_8(u_int8 * byte)
 {
     reset_n();
-    if ((*byte & 0xf) == 0xf) {
-        set_h();
-    } else {
-        reset_h();
-    }
+    (*byte & 0xf) == 0xf ? set_h() : reset_h();
     ++(*byte);
-    if (*byte == 0) {
-        set_z();
-    } else {
-        reset_z();
-    }
+    (*byte == 0) ? set_z() : reset_z();
 }
 
 static inline void DEC_8(u_int8 * byte)
 {
     set_n();
-    if ((*byte & 0xf) == 0) {
-        set_h();
-    } else {
-        reset_h();
-    }
+    (*byte & 0xf) == 0 ? set_h() : reset_h();
     --(*byte);
-    if (*byte == 0) {
-        set_z();
-    } else {
-        reset_z();
-    }
+    (*byte == 0) ? set_z() : reset_z();
 }
 
 static inline void ADD_HL(u_int16 word)
 {
     reset_n();
-    if ((((regs.word.HL & 0x0FFF) + (word & 0x0FFF)) & 0x1000) == 0x1000) {
-        set_h();
-    } else {
-        reset_h();
-    }
+    (((regs.word.HL & 0x0FFF) + (word & 0x0FFF)) & 0x1000) == 0x1000 ? set_h() : reset_h();
     int word1 = regs.word.HL;
     int word2 = word;
-    if ((((word1 & 0xffff) + (word2 & 0xffff)) & 0x10000) == 0x10000) {
-        set_c();
-    } else {
-        reset_c();
-    }
+    (((word1 & 0xffff) + (word2 & 0xffff)) & 0x10000) == 0x10000 ? set_c() : reset_c();
     regs.word.HL += word;
 }
 
 static inline void ADD_A(u_int8 byte)
 {
-    if (half_carry(regs.byte.A, byte)) {
-        set_h();
-    } else {
-        reset_h();
-    }
+    half_carry(regs.byte.A, byte) ? set_h() : reset_h();
     u_int16 temp_byte1 = regs.byte.A;
     u_int16 temp_byte2 = byte;
-    if (((temp_byte1 + temp_byte2) & 0x0100) == 0x0100) {
-        set_c();
-    } else {
-        reset_c();
-    }
+    ((temp_byte1 + temp_byte2) & 0x0100) == 0x0100 ? set_c() : reset_c();
     regs.byte.A += byte;
-    if (regs.byte.A == 0) {
-        set_z();
-    } else {
-        reset_z();
-    }
+    regs.byte.A == 0 ? set_z() : reset_z();
     reset_n();
 }
 
 static inline void ADC_A(u_int8 byte)
 {
     int c = test_c();
-    if (((regs.byte.A & 0x0f) + (byte & 0xf) + c) > 0xf) {
-        set_h();
-    } else {
-        reset_h();
-    }
+    ((regs.byte.A & 0x0f) + (byte & 0xf) + c) > 0xf ? set_h() : reset_h();
     int result = regs.byte.A + byte + c;
-    if (result > 0xff) {
-        set_c();
-    } else {
-        reset_c();
-    }
+    result > 0xff ? set_c() : reset_c();
     regs.byte.A += byte + c;
-    if (regs.byte.A == 0) {
-        set_z();
-    } else {
-        reset_z();
-    }
+    regs.byte.A == 0 ? set_z() : reset_z();
     reset_n();
 }
 
 static inline void SUB_A(u_int8 byte)
 {
-    if ((regs.byte.A & 0x0F) < (byte & 0x0F)) {
-        set_h();
-    } else {
-        reset_h();
-    }
-    if (regs.byte.A < byte) {
-        set_c();
-    } else {
-        reset_c();
-    }
+    (regs.byte.A & 0x0F) < (byte & 0x0F) ? set_h() : reset_h();
+    regs.byte.A < byte ? set_c() : reset_c();
     regs.byte.A -= byte;
-    if (regs.byte.A == 0) {
-        set_z();
-    } else {
-        reset_z();
-    }
+    regs.byte.A == 0 ? set_z() : reset_z();
     set_n();
 }
 
 static inline void SBC_A(u_int8 byte)
 {
-    //byte += test_c();
     u_int8 c = test_c();
-    if ((u_int16)regs.byte.A < ((u_int16)byte + c)) {
-        set_c();
-    } else {
-        reset_c();
-    }
-    if ((regs.byte.A & 0x0f) < ((byte &0x0f) + c)) {
-        set_h();
-    } else {
-        reset_h();
-    }
+    (u_int16)regs.byte.A < ((u_int16)byte + c) ? set_c() : reset_c();
+    (regs.byte.A & 0x0f) < ((byte &0x0f) + c) ? set_h() : reset_h();
     regs.byte.A -= (byte + c);
-    if (regs.byte.A == 0) {
-        set_z();
-    } else {
-        reset_z();
-    }
+    regs.byte.A == 0 ? set_z() : reset_z();
     set_n();
 }
 
 static inline void AND_A(u_int8 byte)
 {
     regs.byte.A &= byte;
-    if (regs.byte.A == 0) {
-        set_z();
-    } else {
-        reset_z();
-    }
+    regs.byte.A == 0 ? set_z() : reset_z();
     reset_n();
     set_h();
     reset_c();
@@ -159,11 +100,7 @@ static inline void AND_A(u_int8 byte)
 static inline void XOR_A(u_int8 byte)
 {
     regs.byte.A ^= byte;
-    if (regs.byte.A == 0) {
-        set_z();
-    } else {
-        reset_z();
-    }
+    regs.byte.A == 0 ? set_z() : reset_z();
     reset_n();
     reset_h();
     reset_c();
@@ -172,11 +109,7 @@ static inline void XOR_A(u_int8 byte)
 static inline void OR_A(u_int8 byte)
 {
     regs.byte.A |= byte;
-    if (regs.byte.A == 0) {
-        set_z();
-    } else {
-        reset_z();
-    }
+    regs.byte.A == 0 ? set_z() : reset_z();
     reset_n();
     reset_h();
     reset_c();
@@ -184,21 +117,9 @@ static inline void OR_A(u_int8 byte)
 
 static inline void CP_A(u_int8 byte)
 {
-    if ((regs.byte.A - byte) == 0) {
-        set_z();
-    } else {
-        reset_z();
-    }
-    if (regs.byte.A < byte) {
-        set_c();
-    } else {
-        reset_c();
-    }
-    if ((regs.byte.A & 0x0F) < (byte & 0x0F)) {
-        set_h();
-    } else {
-        reset_h();
-    }
+    (regs.byte.A - byte) == 0 ? set_z() : reset_z();
+    regs.byte.A < byte ? set_c() : reset_c();
+    (regs.byte.A & 0x0F) < (byte & 0x0F) ? set_h() : reset_h();
     set_n();
 }
 

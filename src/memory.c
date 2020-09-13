@@ -1,4 +1,23 @@
+/*
+ * Gemu - Nintendo Game Boy Emulator
+ * Copyright (C) 2017  Alex Dempsey
+
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/
+ *
+ */
+
 #include "memory.h"
+#include "sound.h"
 
 u_int8 memory[MEM_SIZE] = {0}; // 16-bit memory
 u_int8 cart_rom[4194304] = {0};
@@ -128,6 +147,14 @@ void do_dma(u_int8 byte)
     return;
 }
 
+void do_sound(u_int16 address, u_int8 byte)
+{
+    if (address == 0xff15 || address == 0xff1f || (address >= 0xff27 && address <= 0xff2f)) {
+        return;
+    }
+    sync_sound(address,byte);
+}
+
 // returns real-time clock
 u_int8 get_rtc()
 {
@@ -150,5 +177,27 @@ void write_rtc(u_int8 regi, u_int8 byte)
         case 0xB: rtc_dl = byte;
         case 0xC: rtc_dh = byte;
     }
+}
+
+void init_sound_regs()
+{
+    memory[0xFF10] = 0x80;
+    memory[0xFF11] = 0xBF;
+    memory[0xFF12] = 0xF3;
+    memory[0xFF14] = 0xBF;
+    memory[0xFF16] = 0x3F;
+    memory[0xFF17] = 0x00;
+    memory[0xFF19] = 0xBF;
+    memory[0xFF1A] = 0x7F;
+    memory[0xFF1B] = 0xFF;
+    memory[0xFF1C] = 0x9F;
+    memory[0xFF1E] = 0xBF;
+    memory[0xFF20] = 0xFF;
+    memory[0xFF21] = 0x00;
+    memory[0xFF22] = 0x00;
+    memory[0xFF23] = 0xBF;
+    memory[0xFF24] = 0x77;
+    memory[0xFF25] = 0xF3;
+    memory[0xFF26] = 0xF1;
 }
 

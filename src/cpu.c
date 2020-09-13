@@ -1,3 +1,21 @@
+/*
+ * Gemu - Nintendo Game Boy Emulator
+ * Copyright (C) 2017  Alex Dempsey
+
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/
+ *
+ */
+
 #include <stdlib.h>
 #include <windows.h>
 #include <SDL2/SDL.h>
@@ -10,6 +28,7 @@
 #include "timers.h"
 #include "interrupts.h"
 #include "joypad.h"
+#include "sound.h"
 
 char * title = NULL; // title of the rom without extension
 char * file_location = NULL; // absolute file location
@@ -81,7 +100,7 @@ void start_cpu()
     int program_running = 1;
     double start_time, end_time;
     cap = 1;
-
+    init_sound();
     while (program_running) {
         start_time = SDL_GetTicks();
         while (fps_count <= 70224) {
@@ -135,6 +154,7 @@ void start_cpu()
                 SDL_Delay((1000.0 / FRAMES_PER_SECOND) - (end_time - start_time));
             }
         }
+        update_sound();
         fps_count -= 70224;
     }
 }
@@ -252,24 +272,23 @@ void init_regs()
     write_memory(0xFF05, 0x00);
     write_memory(0xFF06, 0x00);
     write_memory(0xFF07, 0x00);
-    write_memory(0xFF10, 0x80);
-    write_memory(0xFF11, 0xBF);
-    write_memory(0xFF12, 0xF3);
-    write_memory(0xFF14, 0xBF);
-    write_memory(0xFF16, 0x3F);
-    write_memory(0xFF17, 0x00);
-    write_memory(0xFF19, 0xBF);
-    write_memory(0xFF1A, 0x7F);
-    write_memory(0xFF1B, 0xFF);
-    write_memory(0xFF1C, 0x9F);
-    write_memory(0xFF1E, 0xBF);
-    write_memory(0xFF20, 0xFF);
-    write_memory(0xFF21, 0x00);
-    write_memory(0xFF22, 0x00);
-    write_memory(0xFF23, 0xBF);
-    write_memory(0xFF24, 0x77);
-    write_memory(0xFF25, 0xF3);
-    write_memory(0xFF26, 0xF1);
+    init_sound_regs();
+    write_memory(0xFF30, 0x84);
+    write_memory(0xFF31, 0x40);
+    write_memory(0xFF32, 0x43);
+    write_memory(0xFF33, 0xAA);
+    write_memory(0xFF34, 0x2D);
+    write_memory(0xFF35, 0x78);
+    write_memory(0xFF36, 0x92);
+    write_memory(0xFF37, 0x3C);
+    write_memory(0xFF38, 0x60);
+    write_memory(0xFF39, 0x59);
+    write_memory(0xFF3A, 0x59);
+    write_memory(0xFF3B, 0xB0);
+    write_memory(0xFF3C, 0x34);
+    write_memory(0xFF3D, 0xB8);
+    write_memory(0xFF3E, 0x2E);
+    write_memory(0xFF3F, 0xDA);
     write_memory(0xFF40, 0x91);
     write_memory(0xFF42, 0x00);
     write_memory(0xFF43, 0x00);

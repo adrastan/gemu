@@ -1,4 +1,23 @@
-#include <SDL.h>
+/*
+ * Gemu - Nintendo Game Boy Emulator
+ * Copyright (C) 2017  Alex Dempsey
+
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/
+ *
+ */
+
+#include <SDL2\SDL.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -26,11 +45,7 @@ void update_graphics()
 {
     // if background is enabled draw tiles otherwise
     // draw blank line
-    if (memory[0xff40] & 0x1) {
-        draw_tiles();
-    } else {
-        draw_blank();
-    }
+    memory[0xff40] & 0x1 ? draw_tiles() : draw_blank();
     // if sprites are enabled draw sprites
     if (memory[0xff40] & 0x2) {
         draw_sprites();
@@ -63,27 +78,17 @@ void draw_tiles()
 
     // check if window is enabled and the current scanline
     // falls on the window
-    if (is_set(lcdc,5)) {
-        if (winy <= ly) {
-            using_window = 1;
-        }
+    if (is_set(lcdc,5) && winy <= ly) {
+         using_window = 1;
     }
 
     // set window tile map
     if (using_window) {
-        if (is_set(lcdc,6)) {
-            win_map = 0x9C00;
-        } else {
-            win_map = 0x9800;
-        }
+        win_map = is_set(lcdc,6) ? 0x9C00 : 0x9800;
     }
 
     // set background tile map
-    if (is_set(lcdc,3)) {
-        bg_map = 0x9C00;
-    } else {
-        bg_map = 0x9800;
-    }
+    bg_map = is_set(lcdc,3) ? 0x9C00 : 0x9800;
 
     // set tile data address
     if (is_set(lcdc,4)) {

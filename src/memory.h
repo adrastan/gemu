@@ -1,3 +1,21 @@
+/*
+ * Gemu - Nintendo Game Boy Emulator
+ * Copyright (C) 2017  Alex Dempsey
+
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see http://www.gnu.org/licenses/
+ *
+ */
+
 #ifndef MEMORY_H
 #define MEMORY_H
 
@@ -26,6 +44,8 @@ void do_banking(u_int16, u_int8);
 void do_dma(u_int8);
 u_int8 get_rtc(void);
 void write_rtc(u_int8,u_int8);
+void do_sound(u_int16,u_int8);
+void init_sound_regs(void);
 
 static inline u_int8 read_memory(u_int16 address)
 {
@@ -59,6 +79,9 @@ static inline u_int8 read_memory(u_int16 address)
 
 static inline void write_memory(u_int16 address, u_int8 byte)
 {
+    if (address >= 0xff10 && address <= 0xff3f) {
+        do_sound(address,byte);
+    }
     // DMA transfer
     if (address == 0xff46) {
         do_dma(byte);
