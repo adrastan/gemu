@@ -17,12 +17,13 @@
  */
 #include <stdlib.h>
 #include <stdio.h>
-#include "sound/Basic_Gb_Apu.h"
-#include "sound/Sound_Queue.h"
+#include <Basic_Gb_Apu.h>
+#include <Multi_Buffer.h>
+#include <Sound_Queue.h>
 
 extern "C" {
-  #include "sound.h"
-  #include "memory.h"
+	#include "sound.h"
+	#include "memory.h"
 }
 
 static Basic_Gb_Apu apu;
@@ -39,8 +40,8 @@ static void handle_error( const char* str )
 
 void init_sound()
 {
-  long const sample_rate = 44100;
-  handle_error( apu.set_sample_rate( sample_rate ) );
+	long const sample_rate = 44100;
+	handle_error( apu.set_sample_rate( sample_rate ) );
 	
 	// Generate a few seconds of sound and play using SDL
 	handle_error( sound.start( sample_rate, 2 ) );
@@ -54,7 +55,7 @@ void sync_sound(u_int16 address, u_int8 byte)
 void update_sound()
 {
 	apu.end_frame();
-  int const buf_size = 2048;
+	int const buf_size = 2048;
 	static blip_sample_t buf [buf_size];
 		
 	// Play whatever samples are available

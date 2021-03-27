@@ -99,7 +99,7 @@ void draw_tiles()
     }
 
     u_int8 y_pos, x_pos;
-    u_int16 tile_id, tile_address;
+    u_int16 tile_id, tile_address, tile_location;
 
     for (int pixel = 0; pixel < 160; ++pixel) {
 
@@ -107,15 +107,14 @@ void draw_tiles()
         if (using_window && pixel >= winx) {
             x_pos = pixel - winx;
             y_pos = ly - winy;
-            tile_id = ((y_pos / 8 * 32) + (x_pos / 8));
             tile_address = win_map + tile_id;
         } else {
             x_pos = pixel + scrollx;
             y_pos = scrolly + ly;
-            tile_id = ((y_pos / 8 * 32) + (x_pos / 8));
             tile_address = bg_map + tile_id;
         }
 
+        tile_id = ((y_pos / 8 * 32) + (x_pos / 8));
         short tile_num;
 
         // using tile numbers 0-255
@@ -126,7 +125,7 @@ void draw_tiles()
             tile_num = (signed char)memory[tile_address];
         }
 
-        u_int16 tile_location = tile_data;
+        tile_location = tile_data;
 
         if (unsign) {
             tile_location += tile_num * 16;
