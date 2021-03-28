@@ -17,7 +17,7 @@ C++_OBJS=obj/main.o obj/sound.o obj/Basic_Gb_Apu.o obj/Sound_Queue.o obj/Multi_B
 #SDL2_FLAGS=-lSDL2main -lSDL2 -Wl,--no-undefined -lm -ldinput8 -ldxguid -ldxerr8 \
 #    -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid -static-libgcc
 
-C_FLAGS=-Wall -std=c++11 -lmingw32 -lSDL2 -lSDL2main
+C_FLAGS=-Wall -std=c++11 -lmingw32 -lSDL2 -lSDL2main -O2
 
 all : main.exe
 

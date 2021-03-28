@@ -41,6 +41,10 @@ u_int8 pixels[160*144*3];
 int interrupt_cycles[4] = {MODE_0, MODE_2, MODE_3, TOTAL};
 u_int8 sprites[40][4];
 
+void draw_pixel(int, int);
+u_int16 get_sprite_address(int, struct sprite *);
+int skip_sprite(int, u_int8);
+
 void update_graphics()
 {
     // if background is enabled draw tiles otherwise
@@ -76,6 +80,10 @@ void draw_tiles()
     u_int8 ly = memory[0xff44];
     u_int8 lcdc = memory[0xff40];
 
+    if (ly < 0 || ly > 143) {
+        return;
+    }
+
     // check if window is enabled and the current scanline
     // falls on the window
     if (is_set(lcdc,5) && winy <= ly) {
@@ -101,20 +109,22 @@ void draw_tiles()
     u_int8 y_pos, x_pos;
     u_int16 tile_id, tile_address, tile_location;
 
+    // for each pixel on the x-axis
     for (int pixel = 0; pixel < 160; ++pixel) {
 
         // check if current pixel falls on the window
         if (using_window && pixel >= winx) {
             x_pos = pixel - winx;
             y_pos = ly - winy;
+            tile_id = ((y_pos / 8 * 32) + (x_pos / 8));
             tile_address = win_map + tile_id;
         } else {
             x_pos = pixel + scrollx;
             y_pos = scrolly + ly;
+            tile_id = ((y_pos / 8 * 32) + (x_pos / 8));
             tile_address = bg_map + tile_id;
         }
 
-        tile_id = ((y_pos / 8 * 32) + (x_pos / 8));
         short tile_num;
 
         // using tile numbers 0-255
@@ -149,10 +159,6 @@ void draw_tiles()
         int colour_number2 = (byte2 >> bit) & 1;
         int colour_number = (colour_number2 << 1) | colour_number1;
 
-        int red = 0;
-        int green = 0;
-        int blue = 0;
-
         u_int8 pallete = memory[0xff47];
         int colour_id;
 
@@ -164,39 +170,17 @@ void draw_tiles()
             case 3: colour_id = (pallete & 0xC0) >> 6; break;
         }
 
-        char shade;
-
-        // shade for current pixel
-        if (colour_id == 0) {
-            shade = 'W';
-        } else if (colour_id == 1) {
-            shade = 'L';
-        } else if (colour_id == 2) {
-            shade = 'D';
-        } else {
-            shade = 'B';
-        }
-
-        switch (shade) {
-            case 'W': red = 0xFF; blue = 0xFF; green = 0xFF; break;
-            case 'L': red = 0xCC; blue = 0xCC; green = 0xCC; break;
-            case 'D': red = 0x77; blue = 0x77; green = 0x77; break;
-            default: break;
-        }
-
-        if (ly < 0 || ly > 143) {
-            continue;
-        }
-        // set pixel value
-        screen[pixel][ly][0] = red;
-        screen[pixel][ly][1] = green;
-        screen[pixel][ly][2] = blue;
+        draw_pixel(pixel, colour_id);
     }
 }
 
 void draw_sprites()
 {
     u_int8 ly = memory[0xff44];
+
+    if (ly < 0 || ly > 143) {
+        return;
+    }
     u_int8 lcdc = memory[0xff40];
     u_int8 sprites_to_draw[10][4] = {{0}};
     int sprite_size = 8;
@@ -214,32 +198,19 @@ void draw_sprites()
     if (is_set(lcdc,2)) {
         sprite_size = 16;
     }
-    // determine which sprites fall on the current scanline
-    if (sprite_size == 8) {
-        for (int i = 0; i < 40; ++i) {
-            if (ly >= sprites[i][0] - 16 && ly < sprites[i][0] - 8) {
-                sprites_to_draw[sprite_count][0] = sprites[i][0];
-                sprites_to_draw[sprite_count][1] = sprites[i][1];
-                sprites_to_draw[sprite_count][2] = sprites[i][2];
-                sprites_to_draw[sprite_count][3] = sprites[i][3];
-                ++sprite_count;
-                if (sprite_count == 10) {
-                    break;
-                }
-            }
+
+    int offset = sprite_size == 8 ? 8 : 0;
+    for (int i = 0; i < 40; ++i) {
+        if (ly < sprites[i][0] - 16 || ly >= (sprites[i][0] - offset)) {
+            continue;
         }
-    } else {
-        for (int i = 0; i < 40; ++i) {
-            if (ly >= sprites[i][0] - 16 && ly < sprites[i][0]) {
-                sprites_to_draw[sprite_count][0] = sprites[i][0];
-                sprites_to_draw[sprite_count][1] = sprites[i][1];
-                sprites_to_draw[sprite_count][2] = sprites[i][2];
-                sprites_to_draw[sprite_count][3] = sprites[i][3];
-                ++sprite_count;
-                if (sprite_count == 10) {
-                    break;
-                }
-            }
+        sprites_to_draw[sprite_count][0] = sprites[i][0];
+        sprites_to_draw[sprite_count][1] = sprites[i][1];
+        sprites_to_draw[sprite_count][2] = sprites[i][2];
+        sprites_to_draw[sprite_count][3] = sprites[i][3];
+        ++sprite_count;
+        if (sprite_count == 10) {
+            break;
         }
     }
 
@@ -250,6 +221,7 @@ void draw_sprites()
 
     struct sprite spr[sprite_count];
 
+    // for each pixel on the x axis
     for (int pixel = 0; pixel < 160; ++pixel) {
         int i;
 
@@ -263,6 +235,7 @@ void draw_sprites()
             continue;
         }
         count = 0;
+
         // get all sprites which fall on the current pixel
         for (i = 0; i < sprite_count; ++i) {
             if (pixel >= sprites_to_draw[i][1] - 8 && pixel < sprites_to_draw[i][1]) {
@@ -274,62 +247,27 @@ void draw_sprites()
             }
         }
         sort_sprites(spr,count); // sort sprites by x_pos
-        u_int16 tile_address_top, tile_address_bottom, tile_address;
+        
         int line, bit;
         u_int8 byte1, byte2;
 
         // go through each sprite on the current pixel
         for (int i = 0; i < count; ++i) {
-            y_pos = spr[i].y_pos;
-            x_pos = spr[i].x_pos;
-            tile_number = spr[i].tile_number;
             attributes = spr[i].attributes;
+            x_pos = spr[i].x_pos;
+            y_pos = spr[i].y_pos;
+            int priority = is_set(attributes,7);
 
-            // if sprite size is 8x8
-            if (sprite_size == 8) {
-                tile_address = 0x8000 + tile_number * 16;
-                if (is_set(attributes,6)) {
-                    line = (y_pos - 8) - ly - 1;
-                } else {
-                    line = (y_pos - ly - 16) * -1;
-                }
-                line *= 2;
-                byte1 = memory[tile_address + line];
-                byte2 = memory[tile_address + line + 1];
-            // sprite size is 8x16
-            } else {
-                tile_address_top = 0x8000 + (tile_number & 0xFE) * 16;
-                tile_address_bottom = 0x8000 + (tile_number | 0x01) * 16;
-                // if scanline falls on the bottom tile
-                if (ly >= (y_pos - 8)) {
-                    // check if the sprite is flipped vertically
-                    if (is_set(attributes,6)) {
-                        line = y_pos - ly - 1;
-                        line *= 2;
-                        byte1 = memory[tile_address_top + line];
-                        byte2 = memory[tile_address_top + line + 1];
-                    } else {
-                        line = (y_pos - ly - 8) * -1;
-                        line *= 2;
-                        byte1 = memory[tile_address_bottom + line];
-                        byte2 = memory[tile_address_bottom + line + 1];
-                    }
-                // scanline falls on the top tile
-                } else {
-                    // check if sprite is flipped vertically
-                    if (is_set(attributes,6)) {
-                        line = y_pos - 8 - ly - 1;
-                        line *= 2;
-                        byte1 = memory[tile_address_bottom + line];
-                        byte2 = memory[tile_address_bottom + line + 1];
-                    } else {
-                        line = (y_pos - 16 - memory[0xff44]) * -1;
-                        line *= 2;
-                        byte1 = memory[tile_address_top + line];
-                        byte2 = memory[tile_address_top + line + 1];
-                    }
-                }
+            // determines whether sprite is behind the background and changes
+            // colours accordingly
+            if (priority && skip_sprite(pixel, ly)) {
+                break;
             }
+
+            u_int16 sprite_address = get_sprite_address(sprite_size, &spr[i]);
+            byte1 = memory[sprite_address];
+            byte2 = memory[sprite_address + 1];
+            
             // check if sprite is flipped horizontally
             if (is_set(attributes,5)) {
                 bit = (x_pos - pixel - 8) * -1;
@@ -337,7 +275,6 @@ void draw_sprites()
                 bit = (x_pos - pixel - 1);
             }
 
-            int priority = is_set(attributes,7);
             pallete_num = is_set(attributes,4);
 
             if (pallete_num) {
@@ -350,10 +287,6 @@ void draw_sprites()
             colour_number2 = (byte2 >> bit) & 1;
             colour_number = (colour_number2 << 1) | colour_number1;
 
-            int red = 0;
-            int green = 0;
-            int blue = 0;
-
             int colour_id;
 
             switch (colour_number) {
@@ -363,45 +296,94 @@ void draw_sprites()
                 case 3: colour_id = (pallete & 0xC0) >> 6; break;
             }
 
-            char shade;
+            draw_pixel(pixel, colour_id);
 
-            if (colour_id == 0) {
-                shade = 'W';
-            } else if (colour_id == 1) {
-                shade = 'L';
-            } else if (colour_id == 2) {
-                shade = 'D';
-            } else {
-                shade = 'B';
-            }
-            switch (shade) {
-                case 'W': red = 0xFF; blue = 0xFF; green = 0xFF; break;
-                case 'L': red = 0xCC; blue = 0xCC; green = 0xCC; break;
-                case 'D': red = 0x77; blue = 0x77; green = 0x77; break;
-                default: break;
-            }
-
-            if (ly < 0 || ly > 143) {
-                continue;
-            }
-            // determines whether sprite is behind the background and changes
-            // colours accordingly
-            if (priority) {
-                u_int8 bg_pallete = memory[0xff47];
-                int pixel_col = screen[pixel][ly][0];
-                int colour_id1 = (bg_pallete & 0x0C) >> 2;
-                int colour_id2 = (bg_pallete & 0x30) >> 4;
-                int colour_id3 = (bg_pallete & 0xC0) >> 6;
-                if (pixel_col == get_bg_colour(colour_id1) || pixel_col == get_bg_colour(colour_id2) ||
-                    pixel_col == get_bg_colour(colour_id3)) {
-                    break;
-                }
-            }
-            // set pixel value
-            screen[pixel][ly][0] = red;
-            screen[pixel][ly][1] = green;
-            screen[pixel][ly][2] = blue;
             break;
+        }
+    }
+}
+
+void draw_pixel(int pixel, int colour_id)
+{
+    int red = 0;
+    int green = 0;
+    int blue = 0;
+    u_int8 ly = memory[0xff44];
+
+    // shade for current pixel
+    if (colour_id == 0) {
+        red = green = blue = 0xFF;
+    } else if (colour_id == 1) {
+        red = green = blue = 0xCC;
+    } else if (colour_id == 2) {
+        red = green = blue = 0x77;
+    }
+    // set pixel value
+    screen[pixel][ly][0] = red;
+    screen[pixel][ly][1] = green;
+    screen[pixel][ly][2] = blue;
+}
+
+int skip_sprite(int pixel, u_int8 ly)
+{
+    u_int8 bg_pallete = memory[0xff47];
+    int pixel_col = screen[pixel][ly][0];
+    int colour_id1 = (bg_pallete & 0x0C) >> 2;
+    int colour_id2 = (bg_pallete & 0x30) >> 4;
+    int colour_id3 = (bg_pallete & 0xC0) >> 6;
+    if (pixel_col == get_bg_colour(colour_id1) || pixel_col == get_bg_colour(colour_id2) ||
+        pixel_col == get_bg_colour(colour_id3)) {
+        return 1;
+    }
+    return 0;
+}
+
+u_int16 get_sprite_address(int sprite_size, struct sprite *spr)
+{
+    int line;
+    u_int8 tile_number, x_pos, y_pos, attributes;
+    u_int16 tile_address_top, tile_address_bottom, tile_address;
+    u_int8 ly = memory[0xff44];
+    y_pos = spr->y_pos;
+    x_pos = spr->x_pos;
+    tile_number = spr->tile_number;
+    attributes = spr->attributes;
+
+    // if sprite size is 8x8
+    if (sprite_size == 8) {
+        tile_address = 0x8000 + tile_number * 16;
+        if (is_set(attributes,6)) {
+            line = (y_pos - 8) - ly - 1;
+        } else {
+            line = (y_pos - ly - 16) * -1;
+        }
+        line *= 2;
+        return tile_address + line;
+    }
+
+    // sprite size is 8x16
+    tile_address_top = 0x8000 + (tile_number & 0xFE) * 16;
+    tile_address_bottom = 0x8000 + (tile_number | 0x01) * 16;
+
+    // if scanline falls on the bottom tile
+    if (ly >= (y_pos - 8)) {
+        // check if the sprite is flipped vertically
+        if (is_set(attributes,6)) {
+            line = (y_pos - ly - 1) * 2;
+            return tile_address_top + line;
+        } else {
+            line = (y_pos - ly - 8) * -2;
+            return tile_address_bottom + line;
+        }
+    // scanline falls on the top tile
+    } else {
+        // check if sprite is flipped vertically
+        if (is_set(attributes,6)) {
+            line = (y_pos - 8 - ly - 1) * 2;
+            return tile_address_bottom + line;
+        } else {
+            line = (y_pos - 16 - memory[0xff44]) * -2;
+            return tile_address_top + line;
         }
     }
 }
@@ -564,20 +546,18 @@ void update_lcd(int cycles)
     }
     // last scanline so switch to mode 1 and generate
     // vblank interrupt
-    if (memory[0xff44] == 144) {
-        if (mode != 1) {
-            interrupt_cycles[0] = MODE_0;
-            switch_mode(1);
-            if (save_request) {
-                save_state();
-            }
-            if (load_request) {
-                load_state();
-            }
-            request_interrupt(0);
-            if (is_set(memory[0xff41],4)) {
-                request_interrupt(1);
-            }
+    if (memory[0xff44] == 144 && mode != 1) {
+        interrupt_cycles[0] = MODE_0;
+        switch_mode(1);
+        if (save_request) {
+            save_state();
+        }
+        if (load_request) {
+            load_state();
+        }
+        request_interrupt(0);
+        if (is_set(memory[0xff41],4)) {
+            request_interrupt(1);
         }
     }
 }
