@@ -83,6 +83,17 @@ static inline u_int8 read_memory(u_int16 address)
 
 static inline void write_memory(u_int16 address, u_int8 byte)
 {
+    // ram area
+    if (address >= 0xA000 && address <= 0xBFFF) {
+        if (!ram_enabled) return;
+        if (ram_bank <= 3) {
+            cart_ram[(address - 0xA000) + (ram_bank * 8192)] = byte;
+        } else {
+            write_rtc(ram_bank, byte);
+        }
+        return;
+    }
+    // sound area
     if (address >= 0xff10 && address <= 0xff3f) {
         do_sound(address,byte);
     }
@@ -128,16 +139,6 @@ static inline void write_memory(u_int16 address, u_int8 byte)
     }
     // unusable memory
     if (address >= 0xFEA0 && address <= 0xFEFF) {
-        return;
-    }
-    // ram area
-    if (address >= 0xA000 && address <= 0xBFFF) {
-        if (!ram_enabled) return;
-        if (ram_bank <= 3) {
-            cart_ram[(address - 0xA000) + (ram_bank * 8192)] = byte;
-        } else {
-            write_rtc(ram_bank, byte);
-        }
         return;
     }
     memory[address] = byte;
