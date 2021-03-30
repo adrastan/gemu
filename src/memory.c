@@ -36,102 +36,113 @@ u_int8 rtc_h;
 u_int8 rtc_dl;
 u_int8 rtc_dh;
 
-void do_banking(u_int16 address, u_int8 byte)
+void do_ram_enable(u_int16 address, u_int8 byte)
 {
-    // RAM enable
-    if (address >= 0 && address <= 0x1FFF) {
-        if (MBC2) {
-            // lsb of upper address byte must not be zero to enable/disable RAM
-            if ((address & (1 << 8))) {
-                return;
-            }
+    // lsb of upper address byte must not be zero to enable/disable RAM
+    if (MBC2 && (address & (1 << 8))) {
+        return;
+    }
+    if (MBC3) {
+        if (byte == 0x0A) {
+            ram_enabled = 1;
         }
-        if (MBC3) {
-            if (byte == 0x0A) {
-                ram_enabled = 1;
-            }
-            if (byte == 0) {
-                ram_enabled = 0;
-            }
-            return;
+        if (byte == 0) {
+            ram_enabled = 0;
         }
+    } else {
         byte &= 0x0F;
         if (byte == 0x0A) {
             ram_enabled = 1;
         } else {
             ram_enabled = 0;
         }
-        return;
     }
-    // select rom bank lower
-    if (address >= 0x2000 && address <= 0x3FFF) {
-        if (MBC2) {
-            if (address & (1 << 8)) {
-                u_int8 lower_4 = byte & 0x0F;
-                bank = 0;
-                bank |= lower_4;
-                if (bank == 0) {
-                    ++bank;
-                }
-            }
-            return;
+}
+
+void do_rom_bank_lower(u_int16 address, u_int8 byte)
+{
+    if (MBC2 && (address & (1 << 8))) {
+        u_int8 lower_4 = byte & 0x0F;
+        bank = 0;
+        bank |= lower_4;
+        if (bank == 0) {
+            ++bank;
         }
-        if (MBC3) {
-            bank = byte & 0x7F;
-            if (bank == 0) {
-                ++bank;
-            }
-            return;
+    } 
+    else if (MBC3) {
+        bank = byte & 0x7F;
+        if (bank == 0) {
+            ++bank;
         }
+    } 
+    else {
         u_int8 lower_5 = byte & 0x1F;
         bank &= 0xE0;
         bank |= lower_5;
         if (bank == 0 || bank == 0x20 || bank == 0x40 || bank == 0x60) {
             ++bank;
         }
+    }
+}
+
+void do_rom_bank_upper(u_int16 address, u_int8 byte)
+{
+    if (MBC2) {
         return;
+    }
+    else if (MBC3) {
+        if ((byte >= 0 && byte <= 3) || (byte >= 0x8 && byte <= 0xC)) {
+            ram_bank = byte;
+        }
+        return;
+    }
+    if (bank_mode == 0) {
+        u_int8 upper_2 = byte & 0x60;
+        bank &= 0x9F;
+        bank |= (upper_2);
+        if (bank == 0 || bank == 0x20 || bank == 0x40 || bank == 0x60) {
+            ++bank;
+        }
+    } else {
+        if (byte > 3) {
+            return;
+        }
+        ram_bank = byte;
+    }
+}
+
+void do_mode_select(u_int16 address, u_int8 byte)
+{
+    if (MBC2) {
+        return;
+    }
+    byte &= 1;
+    bank_mode = byte;
+    if (bank_mode == 1) {
+        bank &= 0x9F;
+    }
+    if (bank_mode == 0) {
+        ram_bank = 0;
+    }
+}
+
+void do_banking(u_int16 address, u_int8 byte)
+{
+    // RAM enable
+    if (address >= 0 && address <= 0x1FFF) {
+        do_ram_enable(address, byte);
+    }
+    // select rom bank lower
+    else if (address >= 0x2000 && address <= 0x3FFF) {
+        do_rom_bank_lower(address, byte);
     }
     // select rom bank upper
-    if (address >= 0x4000 && address <= 0x5FFF) {
-        if (MBC2) {
-            return;
-        }
-        if (MBC3) {
-            if ((byte >= 0 && byte <= 3) || (byte >= 0x8 && byte <= 0xC)) {
-                ram_bank = byte;
-            }
-            return;
-        }
-        if (bank_mode == 0) {
-            u_int8 upper_2 = byte & 0x60;
-            bank &= 0x9F;
-            bank |= (upper_2);
-            if (bank == 0 || bank == 0x20 || bank == 0x40 || bank == 0x60) {
-                ++bank;
-            }
-            return;
-        } else {
-            if (byte > 3) {
-                return;
-            }
-            ram_bank = byte;
-            return;
-        }
+    else if (address >= 0x4000 && address <= 0x5FFF) {
+        do_rom_bank_upper(address, byte);
     }
     // mode select
-    if (address >= 0x6000 && address <= 0x7FFF) {
-        if (MBC2) {
-            return;
-        }
-        byte &= 1;
-        bank_mode = byte;
-        if (bank_mode == 1) {
-            bank &= 0x9F;
-        }
-        if (bank_mode == 0) {
-            ram_bank = 0;
-        }
-        return;
+    else if (address >= 0x6000 && address <= 0x7FFF) {
+        do_mode_select(address, byte);
     }
 }
 

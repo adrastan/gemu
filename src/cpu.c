@@ -80,7 +80,7 @@ int pre_cycles[256] = {8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
 
 //int clock = 4194304;
 const double FRAMES_PER_SECOND = 60;
-int cap;
+int cap, program_running;
 
 void start_cpu()
 {
@@ -97,55 +97,15 @@ void start_cpu()
     char p[] = "0";
     int n = (int)strtol(p,NULL,16);
     SDL_Event event;
-    int program_running = 1;
+    program_running = 1;
     double start_time, end_time;
     cap = 1;
     init_sound();
+
     while (program_running) {
         start_time = SDL_GetTicks();
         while (fps_count <= 70224) {
-            while (SDL_PollEvent(&event)) {
-                switch (event.type) {
-                    case SDL_KEYDOWN:
-                    case SDL_KEYUP: update_joypad(&event.key); break;
-                    case SDL_QUIT: program_running = 0; break;
-                }
-            }
-            check_interrupts();
-            counter = delay;
-            delay = 0;
-            if (!halt) {
-                opcode = read_memory(pc.PC++);
-                counter += op_cycles[opcode];
-                process_opcode();
-            } else {
-                counter += 4;
-            }
-            if (0) {
-                debug = 1;
-            }
-            if (debug) {
-                print_flags();
-                c = getchar();
-                if ((c) == 'q') {
-                    getchar();
-                    debug = 0;
-                } else if (c == '\n') {
-
-                } else {
-                    p[0] = c;
-                    p[1] = getchar();
-                    p[2] = getchar();
-                    p[3] = getchar();
-                    n = (int)strtol(p,NULL,16);
-                    getchar();
-                    debug = 0;
-                }
-            }
-            fps_count += counter;
-            update_lcd(counter);
-            update_timers(counter);
-            update_serial(counter);
+            update_frame(&event);
         }
         draw_frame();
         end_time = SDL_GetTicks();
@@ -159,17 +119,43 @@ void start_cpu()
     }
 }
 
+void update_frame(SDL_Event *event)
+{
+    while (SDL_PollEvent(event)) {
+        switch (event->type) {
+            case SDL_KEYDOWN:
+            case SDL_KEYUP: update_joypad(&event->key); break;
+            case SDL_QUIT: program_running = 0; break;
+        }
+    }
+    check_interrupts();
+    counter = delay;
+    delay = 0;
+    if (!halt) {
+        opcode = read_memory(pc.PC++);
+        counter += op_cycles[opcode];
+        process_opcode();
+    } else {
+        counter += 4;
+    }
+    fps_count += counter;
+    update_lcd(counter);
+    update_timers(counter);
+    update_serial(counter);
+}
+
 void update_serial(int cycles)
 {
-    if (is_set(memory[0xff02],7) && is_set(memory[0xff02],0)) {
-        transfer_time += counter;
-        if (transfer_time >= 4096) {
-            request_interrupt(3);
-            transfer_time = 0;
-            transfer = 0;
-            memory[0xff01] = 0xff;
-            memory[0xff02] &= ~(1 << 7);
-        }
+    if (!is_set(memory[0xff02], 7) || !is_set(memory[0xff02], 0)) {
+        return;
+    }
+    transfer_time += counter;
+    if (transfer_time >= 4096) {
+        request_interrupt(3);
+        transfer_time = 0;
+        transfer = 0;
+        memory[0xff01] = 0xff;
+        memory[0xff02] &= ~(1 << 7);
     }
 }
 
@@ -339,6 +325,140 @@ void push(u_int16 word)
     write_memory(sp.SP-1, high);
     write_memory(sp.SP-2, low);
     sp.SP = sp.SP - 2;
+}
+
+void print_flags()
+{
+    printf("AF: %.4x\n", regs.word.AF);
+    printf("BC: %.4hx\n", regs.word.BC);
+    printf("DE: %.4hx\n", regs.word.DE);
+    printf("HL: %.4hx\n", regs.word.HL);
+    printf("SP: %.4hx\n", sp.SP);
+    printf("PC: %.4hx\n", pc.PC);
+    printf("Z: %d\n", test_z());
+    printf("N: %d\n", test_n());
+    printf("H: %d\n", test_h());
+    printf("C: %d\n", test_c());
+    printf("ffff: %hx\n", memory[0xffff]);
+    printf("ff0f: %hx\n", memory[0xff0f]);
+    printf("ime: %d\n", ime);
+    printf("ly: %d\n", memory[0xff44]);
+    printf("ff40: %hx\n", memory[0xff40]);
+    printf("ff01: %hx\n", memory[0xff01]);
+    printf("ff02: %hx\n", memory[0xff02]);
+    printf("9dc1: %d\n", memory[0x9dc1]);
+}
+
+// save game to file
+void save_state()
+{
+    FILE *st = fopen(save_file, "wb");
+    u_int8 *bytes = get_state();
+    fwrite(bytes,1,0x10000+20,st);
+    fflush(st);
+    fclose(st);
+    save_request = 0;
+}
+
+// load game save file
+void load_state()
+{
+    FILE *ls = fopen(save_file, "rb");
+    if (ls == NULL) {
+        return;
+    }
+    u_int8 bytes[0x10000+20];
+    fread(bytes,1,0x10000+20,ls);
+    for (int i = 0; i < 0x8000; ++i) {
+        memory[0x8000+i] = bytes[i];
+    }
+    for (int i = 0x8000; i < 0x10000; ++i) {
+        cart_ram[i-0x8000] = bytes[i];
+    }
+    pc.byte.L = bytes[0x10000];
+    pc.byte.H = bytes[0x10001];
+    sp.byte.L = bytes[0x10002];
+    sp.byte.H = bytes[0x10003];
+    regs.byte.A = bytes[0x10004];
+    regs.byte.F = bytes[0x10005];
+    regs.byte.B = bytes[0x10006];
+    regs.byte.C = bytes[0x10007];
+    regs.byte.D = bytes[0x10008];
+    regs.byte.E = bytes[0x10009];
+    regs.byte.H = bytes[0x1000A];
+    regs.byte.L = bytes[0x1000B];
+    halt = bytes[0x1000C];
+    ime = bytes[0x1000D];
+    bank = bytes[0x1000E];
+    ram_bank = bytes[0x1000F];
+    ram_enabled = bytes[0x10010];
+    bank_mode = bytes[0x10011];
+    fclose(ls);
+    interrupt_cycles[0] = 204;
+    interrupt_cycles[1] = 80;
+    interrupt_cycles[2] = 172;
+    load_request = 0;
+}
+
+// returns a pointer to the current state of the emulator
+u_int8* get_state()
+{
+    static u_int8 bytes[0x10000+20];
+
+    for (int i = 0; i < 0x8000; ++i) {
+        bytes[i] = memory[0x8000+i];
+    }
+    for (int i = 0x8000; i < 0x10000; ++i) {
+        bytes[i] = cart_ram[i-0x8000];
+    }
+
+    bytes[0x10000] = pc.byte.L;
+    bytes[0x10001] = pc.byte.H;
+    bytes[0x10002] = sp.byte.L;
+    bytes[0x10003] = sp.byte.H;
+    bytes[0x10004] = regs.byte.A;
+    bytes[0x10005] = regs.byte.F;
+    bytes[0x10006] = regs.byte.B;
+    bytes[0x10007] = regs.byte.C;
+    bytes[0x10008] = regs.byte.D;
+    bytes[0x10009] = regs.byte.E;
+    bytes[0x1000A] = regs.byte.H;
+    bytes[0x1000B] = regs.byte.L;
+    bytes[0x1000C] = halt;
+    bytes[0x1000D] = ime;
+    bytes[0x1000E] = bank;
+    bytes[0x1000F] = ram_bank;
+    bytes[0x10010] = ram_enabled;
+    bytes[0x10011] = bank_mode;
+
+    return bytes;
+}
+
+// resets the emulator
+void restart()
+{
+    for (int i = 0x8000; i < 0x10000; ++i) {
+        memory[i] = 0;
+        cart_ram[i-0x8000] = 0;
+    }
+    set_clock_freq();
+    switch_mode(2);
+    init_regs();
+    debug = 0;
+    save_request = 0;
+    load_request = 0;
+    transfer_time = 0;
+    transfer = 0;
+    count = 0;
+    delay = 0;
+    halt = 0;
+    fps_count = 0;
+    ime = 1;
+    counter = 0;
+    interrupt_cycles[0] = 204;
+    interrupt_cycles[1] = 80;
+    interrupt_cycles[2] = 172;
+    interrupt_cycles[3] = 456;
 }
 
 void process_opcode()
@@ -592,138 +712,4 @@ void process_opcode()
         default: printf("invalid opcode");
         return;
     }
-}
-
-void print_flags()
-{
-    printf("AF: %.4x\n", regs.word.AF);
-    printf("BC: %.4hx\n", regs.word.BC);
-    printf("DE: %.4hx\n", regs.word.DE);
-    printf("HL: %.4hx\n", regs.word.HL);
-    printf("SP: %.4hx\n", sp.SP);
-    printf("PC: %.4hx\n", pc.PC);
-    printf("Z: %d\n", test_z());
-    printf("N: %d\n", test_n());
-    printf("H: %d\n", test_h());
-    printf("C: %d\n", test_c());
-    printf("ffff: %hx\n", memory[0xffff]);
-    printf("ff0f: %hx\n", memory[0xff0f]);
-    printf("ime: %d\n", ime);
-    printf("ly: %d\n", memory[0xff44]);
-    printf("ff40: %hx\n", memory[0xff40]);
-    printf("ff01: %hx\n", memory[0xff01]);
-    printf("ff02: %hx\n", memory[0xff02]);
-    printf("9dc1: %d\n", memory[0x9dc1]);
-}
-
-// save game to file
-void save_state()
-{
-    FILE *st = fopen(save_file, "wb");
-    u_int8 *bytes = get_state();
-    fwrite(bytes,1,0x10000+20,st);
-    fflush(st);
-    fclose(st);
-    save_request = 0;
-}
-
-// load game save file
-void load_state()
-{
-    FILE *ls = fopen(save_file, "rb");
-    if (ls == NULL) {
-        return;
-    }
-    u_int8 bytes[0x10000+20];
-    fread(bytes,1,0x10000+20,ls);
-    for (int i = 0; i < 0x8000; ++i) {
-        memory[0x8000+i] = bytes[i];
-    }
-    for (int i = 0x8000; i < 0x10000; ++i) {
-        cart_ram[i-0x8000] = bytes[i];
-    }
-    pc.byte.L = bytes[0x10000];
-    pc.byte.H = bytes[0x10001];
-    sp.byte.L = bytes[0x10002];
-    sp.byte.H = bytes[0x10003];
-    regs.byte.A = bytes[0x10004];
-    regs.byte.F = bytes[0x10005];
-    regs.byte.B = bytes[0x10006];
-    regs.byte.C = bytes[0x10007];
-    regs.byte.D = bytes[0x10008];
-    regs.byte.E = bytes[0x10009];
-    regs.byte.H = bytes[0x1000A];
-    regs.byte.L = bytes[0x1000B];
-    halt = bytes[0x1000C];
-    ime = bytes[0x1000D];
-    bank = bytes[0x1000E];
-    ram_bank = bytes[0x1000F];
-    ram_enabled = bytes[0x10010];
-    bank_mode = bytes[0x10011];
-    fclose(ls);
-    interrupt_cycles[0] = 204;
-    interrupt_cycles[1] = 80;
-    interrupt_cycles[2] = 172;
-    load_request = 0;
-}
-
-// returns a pointer to the current state of the emulator
-u_int8* get_state()
-{
-    static u_int8 bytes[0x10000+20];
-
-    for (int i = 0; i < 0x8000; ++i) {
-        bytes[i] = memory[0x8000+i];
-    }
-    for (int i = 0x8000; i < 0x10000; ++i) {
-        bytes[i] = cart_ram[i-0x8000];
-    }
-
-    bytes[0x10000] = pc.byte.L;
-    bytes[0x10001] = pc.byte.H;
-    bytes[0x10002] = sp.byte.L;
-    bytes[0x10003] = sp.byte.H;
-    bytes[0x10004] = regs.byte.A;
-    bytes[0x10005] = regs.byte.F;
-    bytes[0x10006] = regs.byte.B;
-    bytes[0x10007] = regs.byte.C;
-    bytes[0x10008] = regs.byte.D;
-    bytes[0x10009] = regs.byte.E;
-    bytes[0x1000A] = regs.byte.H;
-    bytes[0x1000B] = regs.byte.L;
-    bytes[0x1000C] = halt;
-    bytes[0x1000D] = ime;
-    bytes[0x1000E] = bank;
-    bytes[0x1000F] = ram_bank;
-    bytes[0x10010] = ram_enabled;
-    bytes[0x10011] = bank_mode;
-
-    return bytes;
-}
-
-// resets the emulator
-void restart()
-{
-    for (int i = 0x8000; i < 0x10000; ++i) {
-        memory[i] = 0;
-        cart_ram[i-0x8000] = 0;
-    }
-    set_clock_freq();
-    switch_mode(2);
-    init_regs();
-    debug = 0;
-    save_request = 0;
-    load_request = 0;
-    transfer_time = 0;
-    transfer = 0;
-    count = 0;
-    delay = 0;
-    halt = 0;
-    fps_count = 0;
-    ime = 1;
-    counter = 0;
-    interrupt_cycles[0] = 204;
-    interrupt_cycles[1] = 80;
-    interrupt_cycles[2] = 172;
-    interrupt_cycles[3] = 456;
 }

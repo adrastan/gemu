@@ -22,6 +22,7 @@
 void check_interrupts(void);
 void request_interrupt(int);
 void discard_interrupt(int);
+void do_interrupts(void);
 
 #endif // INTERRUPTS_H
 

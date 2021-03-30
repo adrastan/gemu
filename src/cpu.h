@@ -20,7 +20,7 @@
 #define CPU_H
 
 #include <stdio.h>
-
+#include <SDL2/SDL.h>
 #include "cpu_types.h"
 
 extern int debug;
@@ -69,5 +69,6 @@ void save_state(void);
 void load_state(void);
 u_int8* get_state(void);
 void restart(void);
+void update_frame(SDL_Event *);
 
 #endif // CPU_H

@@ -33,6 +33,15 @@ void update_clock()
     } else {
         ++memory[0xff05];
     }
+    if (timer_control == 0) {
+        timer_cycles += 1024;
+    } else if (timer_control == 1) {
+        timer_cycles += 16;
+    } else if (timer_control == 2) {
+        timer_cycles += 64;
+    } else {
+        timer_cycles += 256;
+    }
 }
 
 void update_divider(int cycles)
@@ -49,28 +58,21 @@ void update_timers(int cycles)
     update_divider(cycles);
     int cur_control = memory[0xff07] & 0x03;
 
-    // check if clock is enabled
-    if (is_set(memory[0xff07],2)) {
-        // if control has not changed since last instruction
-        if (timer_control == cur_control) {
-            timer_cycles -= cycles;
-            if (timer_cycles <= -4) {
-                update_clock();
-                if (timer_control == 0) {
-                    timer_cycles += 1024;
-                } else if (timer_control == 1) {
-                    timer_cycles += 16;
-                } else if (timer_control == 2) {
-                    timer_cycles += 64;
-                } else {
-                    timer_cycles += 256;
-                }
-            }
-        } else {
-            timer_control = cur_control;
-            memory[0xff05] = 0;
-            set_clock_freq();
+    // clock is disabled
+    if (!is_set(memory[0xff07], 2)) {
+        return;
+    }
+
+    // if control has not changed since last instruction
+    if (timer_control == cur_control) {
+        timer_cycles -= cycles;
+        if (timer_cycles <= -4) {
+            update_clock();
         }
+    } else {
+        timer_control = cur_control;
+        memory[0xff05] = 0;
+        set_clock_freq();
     }
 }
 

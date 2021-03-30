@@ -47,6 +47,24 @@ void write_rtc(u_int8,u_int8);
 void do_sound(u_int16,u_int8);
 void init_sound_regs(void);
 
+static inline u_int8 _read_ram(u_int16 address)
+{
+    if (!ram_enabled) {
+        return 0xFF;
+    }
+    // using mbc2
+    if (MBC2) {
+        return cart_ram[(address - 0xA000)] & 0x0F;
+    }
+    // using mbc3
+    if (MBC3 && ram_bank <= 3) {
+        return cart_ram[(address - 0xA000) + (ram_bank * 8192)];
+    } else if (MBC3) {
+        return get_rtc();
+    }
+    return cart_ram[(address - 0xA000) + (ram_bank * 8192)];
+}
+
 static inline u_int8 read_memory(u_int16 address)
 {
     // returns byte depending on rom bank
@@ -55,21 +73,7 @@ static inline u_int8 read_memory(u_int16 address)
     }
     // returns ram byte depending on ram bank
     if (address >= 0xA000 && address <= 0xBFFF) {
-        if (ram_enabled) {
-            // using mbc2
-            if (MBC2) {
-                return cart_ram[(address - 0xA000)] & 0x0F;
-            }
-            // using mbc3
-            if (MBC3) {
-                if (ram_bank <= 3) {
-                    return cart_ram[(address - 0xA000) + (ram_bank * 8192)];
-                }
-                return get_rtc();
-            }
-            return cart_ram[(address - 0xA000) + (ram_bank * 8192)];
-        }
-        return 0xFF;
+        return _read_ram(address);
     }
     if (address == 0xff00) {
         return joypad_state();
@@ -128,12 +132,11 @@ static inline void write_memory(u_int16 address, u_int8 byte)
     }
     // ram area
     if (address >= 0xA000 && address <= 0xBFFF) {
-        if (ram_enabled) {
-            if (ram_bank <= 3) {
-                cart_ram[(address - 0xA000) + (ram_bank * 8192)] = byte;
-            } else {
-                write_rtc(ram_bank, byte);
-            }
+        if (!ram_enabled) return;
+        if (ram_bank <= 3) {
+            cart_ram[(address - 0xA000) + (ram_bank * 8192)] = byte;
+        } else {
+            write_rtc(ram_bank, byte);
         }
         return;
     }
