@@ -36,14 +36,16 @@ extern SDL_Surface* screen_surface;
 extern SDL_Texture* texture;
 extern SDL_Renderer* renderer;
 
-u_int8 screen[160][144][3] = {};
-u_int8 pixels[160*144*3];
+u_int8 screen[144][160][3] = {};
+// u_int8 pixels[160*144*3] = {};
+int pixel_count = 0;
 int interrupt_cycles[4] = {MODE_0, MODE_2, MODE_3, TOTAL};
 u_int8 sprites[40][4];
 
 void draw_pixel(int, int);
 u_int16 get_sprite_address(int, struct sprite *);
 int skip_sprite(int, u_int8);
+void render_sprites(int, u_int8, int, int, struct sprite []);
 
 void update_graphics()
 {
@@ -59,10 +61,22 @@ void update_graphics()
 void draw_blank()
 {
     int ly = memory[0xff44];
+    if (ly < 0 || ly > 143) {
+        return;
+    }
+    int idx;
+
+    unsigned char * pixels = (unsigned char *)screen_surface->pixels;
+
     for (int pixel = 0; pixel < 160; ++pixel) {
-        screen[pixel][ly][0] = 0xFF;
-        screen[pixel][ly][1] = 0xFF;
-        screen[pixel][ly][2] = 0xFF;
+        screen[ly][pixel][0] = 0xFF;
+        screen[ly][pixel][1] = 0xFF;
+        screen[ly][pixel][2] = 0xFF;
+
+        idx = 160 * 3 * ly + 3 * pixel;
+        pixels[idx + 0] = 0xFF;
+        pixels[idx + 1] = 0xFF;
+        pixels[idx + 2] = 0xFF;
     }
 }
 
@@ -215,9 +229,6 @@ void draw_sprites()
     }
 
     u_int8 tile_number, x_pos, y_pos, attributes;
-    int pallete_num;
-    u_int8 pallete;
-    int colour_number, colour_number1, colour_number2;
 
     struct sprite spr[sprite_count];
 
@@ -248,58 +259,67 @@ void draw_sprites()
         }
         sort_sprites(spr,count); // sort sprites by x_pos
         
-        int line, bit;
-        u_int8 byte1, byte2;
+        render_sprites(pixel, ly, count, sprite_size, spr);
+    }
+}
 
-        // go through each sprite on the current pixel
-        for (int i = 0; i < count; ++i) {
-            attributes = spr[i].attributes;
-            x_pos = spr[i].x_pos;
-            y_pos = spr[i].y_pos;
-            int priority = is_set(attributes,7);
+void render_sprites(int pixel, u_int8 ly, int count, int sprite_size, struct sprite spr[])
+{
+    u_int8 byte1, byte2;
+    int line, bit;
+    int pallete_num;
+    u_int8 pallete;
+    int colour_number, colour_number1, colour_number2;
+    u_int8 tile_number, x_pos, y_pos, attributes;
 
-            // determines whether sprite is behind the background and changes
-            // colours accordingly
-            if (priority && skip_sprite(pixel, ly)) {
-                break;
-            }
+    // go through each sprite on the current pixel
+    for (int i = 0; i < count; ++i) {
+        attributes = spr[i].attributes;
+        x_pos = spr[i].x_pos;
+        y_pos = spr[i].y_pos;
+        int priority = is_set(attributes,7);
 
-            u_int16 sprite_address = get_sprite_address(sprite_size, &spr[i]);
-            byte1 = memory[sprite_address];
-            byte2 = memory[sprite_address + 1];
-            
-            // check if sprite is flipped horizontally
-            if (is_set(attributes,5)) {
-                bit = (x_pos - pixel - 8) * -1;
-            } else {
-                bit = (x_pos - pixel - 1);
-            }
-
-            pallete_num = is_set(attributes,4);
-
-            if (pallete_num) {
-                pallete = memory[0xff49];
-            } else {
-                pallete = memory[0xff48];
-            }
-
-            colour_number1 = (byte1 >> bit) & 1;
-            colour_number2 = (byte2 >> bit) & 1;
-            colour_number = (colour_number2 << 1) | colour_number1;
-
-            int colour_id;
-
-            switch (colour_number) {
-                case 0: continue;
-                case 1: colour_id = (pallete & 0x0C) >> 2; break;
-                case 2: colour_id = (pallete & 0x30) >> 4; break;
-                case 3: colour_id = (pallete & 0xC0) >> 6; break;
-            }
-
-            draw_pixel(pixel, colour_id);
-
+        // determines whether sprite is behind the background and changes
+        // colours accordingly
+        if (priority && skip_sprite(pixel, ly)) {
             break;
         }
+
+        u_int16 sprite_address = get_sprite_address(sprite_size, &spr[i]);
+        byte1 = memory[sprite_address];
+        byte2 = memory[sprite_address + 1];
+        
+        // check if sprite is flipped horizontally
+        if (is_set(attributes,5)) {
+            bit = (x_pos - pixel - 8) * -1;
+        } else {
+            bit = (x_pos - pixel - 1);
+        }
+
+        pallete_num = is_set(attributes,4);
+
+        if (pallete_num) {
+            pallete = memory[0xff49];
+        } else {
+            pallete = memory[0xff48];
+        }
+
+        colour_number1 = (byte1 >> bit) & 1;
+        colour_number2 = (byte2 >> bit) & 1;
+        colour_number = (colour_number2 << 1) | colour_number1;
+
+        int colour_id;
+
+        switch (colour_number) {
+            case 0: continue;
+            case 1: colour_id = (pallete & 0x0C) >> 2; break;
+            case 2: colour_id = (pallete & 0x30) >> 4; break;
+            case 3: colour_id = (pallete & 0xC0) >> 6; break;
+        }
+
+        draw_pixel(pixel, colour_id);
+
+        break;
     }
 }
 
@@ -319,15 +339,23 @@ void draw_pixel(int pixel, int colour_id)
         red = green = blue = 0x77;
     }
     // set pixel value
-    screen[pixel][ly][0] = red;
-    screen[pixel][ly][1] = green;
-    screen[pixel][ly][2] = blue;
+    screen[ly][pixel][0] = red;
+    screen[ly][pixel][1] = green;
+    screen[ly][pixel][2] = blue;
+
+    int idx = 160 * 3 * ly + 3 * pixel;
+
+    unsigned char * pixels = (unsigned char *)screen_surface->pixels;
+
+    pixels[idx + 0] = red;
+    pixels[idx + 1] = green;
+    pixels[idx + 2] = blue;
 }
 
 int skip_sprite(int pixel, u_int8 ly)
 {
     u_int8 bg_pallete = memory[0xff47];
-    int pixel_col = screen[pixel][ly][0];
+    int pixel_col = screen[ly][pixel][0];
     int colour_id1 = (bg_pallete & 0x0C) >> 2;
     int colour_id2 = (bg_pallete & 0x30) >> 4;
     int colour_id3 = (bg_pallete & 0xC0) >> 6;
@@ -419,22 +447,24 @@ void sort_sprites(struct sprite spr[], int n)
 // renders the next frame
 void draw_frame()
 {
-    int count = 0;
-    // loop through and draw each pixel
-    for (int i = 0; i < 144; ++i) {
-        for (int j = 0; j < 160; ++j) {
-            pixels[count++] = screen[j][i][0];
-            pixels[count++] = screen[j][i][1];
-            pixels[count++] = screen[j][i][2];
-        }
-    }
-    screen_surface = SDL_CreateRGBSurfaceFrom((void*)pixels,160,144,24,160*3,0,0,0,0);
-    texture = SDL_CreateTextureFromSurface(renderer,screen_surface);
+    // screen_surface = SDL_CreateRGBSurfaceFrom((void*)pixels,160,144,24,160*3,0,0,0,0);
+    // texture = SDL_CreateTextureFromSurface(renderer,screen_surface);
+    // SDL_RenderClear(renderer);
+    // SDL_RenderCopy(renderer, texture, NULL, NULL);
+    // SDL_RenderPresent(renderer);
+    // SDL_FreeSurface(screen_surface);
+    // SDL_DestroyTexture(texture);
+
+    if (SDL_MUSTLOCK(screen_surface)) SDL_UnlockSurface(screen_surface);
+    SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(screen_surface->pixels, 160, 144, 24, 160*3, 0, 0, 0, 0);
+
+    SDL_Texture *screenTexture = SDL_CreateTextureFromSurface(renderer, surface);
+
     SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    SDL_RenderCopy(renderer, screenTexture, NULL, NULL);
     SDL_RenderPresent(renderer);
-    SDL_FreeSurface(screen_surface);
-    SDL_DestroyTexture(texture);
+
+    SDL_DestroyTexture(screenTexture);
 }
 
 // switch current lcd mode

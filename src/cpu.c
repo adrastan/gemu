@@ -17,7 +17,6 @@
  */
 
 #include <stdlib.h>
-#include <windows.h>
 #include <SDL2/SDL.h>
 
 #include "cpu.h"
@@ -41,7 +40,6 @@ int transfer;
 int count;
 int delay;
 int halt;
-int fps_count;
 int ime = 1; // interrupt master enable
 int counter;
 u_int8 opcode;
@@ -81,12 +79,16 @@ int pre_cycles[256] = {8,8,8,8,8,8,16,8,8,8,8,8,8,8,16,8,
 //int clock = 4194304;
 const double FRAMES_PER_SECOND = 60;
 int cap, program_running;
+double start_time, end_time;
+int fps_count;
+SDL_Event event;
 
 void start_cpu()
 {
-    FILE *fp = fopen(file_location, "rb");
+    printf("Starting cpu...\n");
+    FILE *fp = fopen("games/tetris.gb", "rb");
     if (fp == NULL) {
-        printf("game not found");
+        printf("game not found\n");
         return;
     }
     read_rom(fp);
@@ -96,27 +98,32 @@ void start_cpu()
     char c;
     char p[] = "0";
     int n = (int)strtol(p,NULL,16);
-    SDL_Event event;
     program_running = 1;
-    double start_time, end_time;
     cap = 1;
-    init_sound();
+    // init_sound();
+    // start_main_loop();
+}
 
+void start_main_loop() {
     while (program_running) {
-        start_time = SDL_GetTicks();
-        while (fps_count <= 70224) {
-            update_frame(&event);
-        }
-        draw_frame();
-        end_time = SDL_GetTicks();
-        if ((end_time - start_time) < 1000.0 / FRAMES_PER_SECOND) {
-            if (cap) {
-                SDL_Delay((1000.0 / FRAMES_PER_SECOND) - (end_time - start_time));
-            }
-        }
-        update_sound();
-        fps_count -= 70224;
+        get_next_frame();
     }
+}
+
+void get_next_frame() {
+    start_time = SDL_GetTicks();
+    while (fps_count <= 70224) {
+        update_frame(&event);
+    }
+    draw_frame();
+    end_time = SDL_GetTicks();
+    if ((end_time - start_time) < 1000.0 / FRAMES_PER_SECOND) {
+        if (cap) {
+            SDL_Delay((1000.0 / FRAMES_PER_SECOND) - (end_time - start_time));
+        }
+    }
+    // update_sound();
+    fps_count -= 70224;
 }
 
 void update_frame(SDL_Event *event)

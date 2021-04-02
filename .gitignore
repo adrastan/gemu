@@ -7,3 +7,8 @@ gbemu.cbp
 .vscode
 *.exe
 *.gb
+games
+*.SAVE
+node_modules
+*.wasm
+emc

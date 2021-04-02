@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <string.h>
 #include <iostream>
+#include <emscripten.h>
 
 #ifdef __cplusplus
 extern "C"
@@ -43,44 +44,68 @@ char a[100];
 char c[100];
 
 void stop_SDL(void);
-void start_emulator(char *);
-
-using namespace std;
+void init_SDL(void);
+//void start_emulator(char *);
+void start_emulator(void);
 
 int main(int argc, char** args)
 {
-	start_emulator(args[1]);
+	// SDL_Init(SDL_INIT_VIDEO);
+    // SDL_CreateWindowAndRenderer(512, 512, 0, &window, &renderer);
+    // surface = SDL_CreateRGBSurface(0, 512, 512, 32, 0, 0, 0, 0);
+	// emscripten_set_main_loop(drawRandomPixels, 0, 1);
+	//start_emulator(args[1]);
+	// start_emulator();
+
+	init_SDL();
+	start_cpu();
+	printf("Starting main loop...\n");
+	emscripten_set_main_loop(get_next_frame, 0, 1);
 	return 0;
 }
 
-void start_emulator(char* game)
+void start_emulator()
+//void start_emulator(char* game)
 {
-	if (game == NULL) {
-		std::cout << "file not found" << std::endl;
+	// if (game == NULL) {
+	// 	std::cout << "file not found" << std::endl;
+	// 	return;
+	// }
+
+
+	//prepare_file(game);
+	init_SDL();
+	start_cpu();
+	start_main_loop();
+	stop_SDL();
+}
+
+void init_SDL() {
+	printf("Initialising SDL..\n");
+	//Initialize SDL
+	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+		std::cout << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
+		stop_SDL();
 		return;
 	}
 
-	//Initialize SDL
-	if (SDL_Init(SDL_INIT_VIDEO) < 0 || SDL_Init(SDL_INIT_AUDIO) < 0) {
+	if (SDL_Init(SDL_INIT_AUDIO) < 0) {
 		std::cout << "SDL could not initialize! SDL_Error: " << SDL_GetError() << std::endl;
 		stop_SDL();
 		return;
 	}
 
 	//Initialize window and renderer
-	window = SDL_CreateWindow("Gemu", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-	if (window == NULL) {
-		std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
-		stop_SDL();
-		return;
-	}
+	// window = SDL_CreateWindow("Gemu", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+	// if (window == NULL) {
+	// 	std::cout << "Window could not be created! SDL_Error: " << SDL_GetError() << std::endl;
+	// 	stop_SDL();
+	// 	return;
+	// }
 
-	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-
-	prepare_file(game);
-	start_cpu();
-	stop_SDL();
-	return;
+	SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0, &window, &renderer);
+    screen_surface = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 24, 0, 0, 0, 0);
+	// renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 }
 
 void stop_SDL() 

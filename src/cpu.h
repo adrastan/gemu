@@ -42,6 +42,8 @@ extern char * file_location;
 
 void prepare_file(char*);
 void start_cpu(void);
+void start_main_loop(void);
+void get_next_frame(void);
 u_int8 test_z(void);
 u_int8 test_n(void);
 u_int8 test_c(void);
