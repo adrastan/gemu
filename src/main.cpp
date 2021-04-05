@@ -53,6 +53,7 @@ void start_emulator(char *);
 #ifdef __EMSCRIPTEN__
 int main(int argc, char** args)
 {
+	printf("Main started\n");
 	init_SDL();
 	start_cpu();
 	printf("Starting main loop...\n");
@@ -65,17 +66,16 @@ int main(int argc, char** args)
 int main(int argc, char** args)
 {
 	start_emulator(args[1]);
+	return 0;
 }
 #endif
 
 void start_emulator(char* game)
 {
-	if (game == NULL) {
-		std::cout << "file not found" << std::endl;
-		return;
+	if (game != NULL) {
+		prepare_file(game);
 	}
-
-	prepare_file(game);
+	
 	init_SDL();
 	start_cpu();
 	start_main_loop();

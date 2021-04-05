@@ -86,7 +86,12 @@ SDL_Event event;
 void start_cpu()
 {
     printf("Starting cpu...\n");
-    FILE *fp = fopen("games/tetris.gb", "rb");
+    FILE *fp;
+    if (file_location == NULL) {
+        fp = fopen("games/tetris.gb", "rb");
+    } else {
+        fp = fopen(file_location, "rb");
+    }
     if (fp == NULL) {
         printf("game not found\n");
         return;
@@ -100,7 +105,7 @@ void start_cpu()
     int n = (int)strtol(p,NULL,16);
     program_running = 1;
     cap = 1;
-    // init_sound();
+    init_sound();
     // start_main_loop();
 }
 
@@ -122,7 +127,7 @@ void get_next_frame() {
             SDL_Delay((1000.0 / FRAMES_PER_SECOND) - (end_time - start_time));
         }
     }
-    // update_sound();
+    update_sound();
     fps_count -= 70224;
 }
 

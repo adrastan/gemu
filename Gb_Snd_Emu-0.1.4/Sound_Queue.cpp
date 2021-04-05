@@ -56,8 +56,8 @@ const char* Sound_Queue::start( long sample_rate, int chan_count )
 	currently_playing_ = bufs;
 	
 	free_sem = SDL_CreateSemaphore( buf_count - 1 );
-	if ( !free_sem )
-		return sdl_error( "Couldn't create semaphore" );
+	// if ( !free_sem )
+	// 	return sdl_error( "Couldn't create semaphore" );
 	
 	SDL_AudioSpec as;
 	as.freq = sample_rate;

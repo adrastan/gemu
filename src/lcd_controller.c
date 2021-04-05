@@ -457,13 +457,11 @@ void draw_frame()
 
     if (SDL_MUSTLOCK(screen_surface)) SDL_UnlockSurface(screen_surface);
     SDL_Surface *surface = SDL_CreateRGBSurfaceFrom(screen_surface->pixels, 160, 144, 24, 160*3, 0, 0, 0, 0);
-
     SDL_Texture *screenTexture = SDL_CreateTextureFromSurface(renderer, surface);
 
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, screenTexture, NULL, NULL);
     SDL_RenderPresent(renderer);
-
     SDL_DestroyTexture(screenTexture);
 }
 
