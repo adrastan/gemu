@@ -160,10 +160,7 @@ void do_dma(u_int8 byte)
 
 void do_sound(u_int16 address, u_int8 byte)
 {
-    if (address == 0xff15 || address == 0xff1f || (address >= 0xff27 && address <= 0xff2f)) {
-        return;
-    }
-    sync_sound(address,byte);
+    sync_sound(address, byte);
 }
 
 // returns real-time clock

@@ -15,16 +15,38 @@
  * along with this program.  If not, see http://www.gnu.org/licenses/
  *
  */
+
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
+
 #include <stdlib.h>
 #include <stdio.h>
+
+extern "C" {
+
+#include "sound.h"
+#include "memory.h"
+
+#ifdef EMSCRIPTEN
+EMSCRIPTEN_KEEPALIVE
+int * getSoundRegisters()
+{
+	return (int *)&memory[0xFF10];
+}
+
+EMSCRIPTEN_KEEPALIVE
+int * getMemoryPtr() {
+	return (int *)&memory[0];
+}
+#endif
+
+}
+
+#ifndef EMSCRIPTEN
 #include <Basic_Gb_Apu.h>
 #include <Multi_Buffer.h>
 #include <Sound_Queue.h>
-
-extern "C" {
-	#include "sound.h"
-	#include "memory.h"
-}
 
 static Basic_Gb_Apu apu;
 static Sound_Queue sound;
@@ -47,12 +69,13 @@ void init_sound()
 	handle_error( sound.start( sample_rate, 2 ) );
 }
 
+
 void sync_sound(u_int16 address, u_int8 byte)
 {
 	apu.write_register( address, byte);
 }
 
-void update_sound()
+void update_sound(int counter)
 {
 	apu.end_frame();
 	int const buf_size = 2048;
@@ -62,4 +85,24 @@ void update_sound()
 	long count = apu.read_samples( buf, buf_size );
 	sound.write( buf, count );
 }
+#endif
 
+#ifdef EMSCRIPTEN
+EM_JS(void, call_write_memory, (int address, int byte), {
+	write_memory(address, byte);
+});
+
+EM_JS(void, call_update_sound, (int cycles), {
+	update_sound(cycles);
+})
+
+void sync_sound(u_int16 address, u_int8 byte)
+{
+	// call_write_memory((int) address, (int) byte);
+}
+
+void update_sound(int cycles)
+{
+	call_update_sound(cycles);
+}
+#endif

@@ -16,14 +16,23 @@
  *
  */
 
-#ifndef SOUND_H
-#define SOUND_H
+#include <emscripten.h>
+#include "cpu.h"
 
-#include "cpu_types.h"
+unsigned char pixels[144 * 160 * 3] = {};
 
-static void handle_error( const char*);
-void init_sound(void);
-void update_sound(int);
-void sync_sound(u_int16,u_int8);
+EMSCRIPTEN_KEEPALIVE
+int * getScreenSurfacePtr() {
+	return (void *)pixels;
+}
 
-#endif // SOUND_H
+EMSCRIPTEN_KEEPALIVE
+void getNextFrame()
+{
+	get_next_frame();
+}
+
+int main(int argc, char** args)
+{
+	start_cpu();
+}

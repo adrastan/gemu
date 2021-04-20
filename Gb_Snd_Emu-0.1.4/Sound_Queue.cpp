@@ -87,7 +87,7 @@ void Sound_Queue::stop()
 	
 	if ( free_sem )
 	{
-		SDL_DestroySemaphore( free_sem );
+		// SDL_DestroySemaphore( free_sem );
 		free_sem = NULL;
 	}
 	

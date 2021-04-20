@@ -16,7 +16,17 @@
  *
  */
 
+#ifndef EMSCRIPTEN
 #include <SDL2\SDL.h>
+extern SDL_Window* window;
+extern SDL_Surface* screen_surface;
+extern SDL_Texture* texture;
+extern SDL_Renderer* renderer;
+#endif
+
+#ifdef EMSCRIPTEN
+extern unsigned char pixels[160 * 144 * 3];
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,11 +40,6 @@
 #define MODE_2 80
 #define MODE_3 172
 #define TOTAL 456
-
-extern SDL_Window* window;
-extern SDL_Surface* screen_surface;
-extern SDL_Texture* texture;
-extern SDL_Renderer* renderer;
 
 u_int8 screen[144][160][3] = {};
 // u_int8 pixels[160*144*3] = {};
@@ -58,6 +63,7 @@ void update_graphics()
     }
 }
 
+#ifndef EMSCRIPTEN
 void draw_blank()
 {
     int ly = memory[0xff44];
@@ -65,8 +71,30 @@ void draw_blank()
         return;
     }
     int idx;
+    unsigned char * p = (unsigned char *)screen_surface->pixels;
 
-    unsigned char * pixels = (unsigned char *)screen_surface->pixels;
+    for (int pixel = 0; pixel < 160; ++pixel) {
+        screen[ly][pixel][0] = 0xFF;
+        screen[ly][pixel][1] = 0xFF;
+        screen[ly][pixel][2] = 0xFF;
+
+        idx = 160 * 3 * ly + 3 * pixel;
+        
+        p[idx + 0] = 0xFF;
+        p[idx + 1] = 0xFF;
+        p[idx + 2] = 0xFF;
+    }
+}
+#endif
+
+#ifdef EMSCRIPTEN
+void draw_blank()
+{
+    int ly = memory[0xff44];
+    if (ly < 0 || ly > 143) {
+        return;
+    }
+    int idx;
 
     for (int pixel = 0; pixel < 160; ++pixel) {
         screen[ly][pixel][0] = 0xFF;
@@ -79,6 +107,7 @@ void draw_blank()
         pixels[idx + 2] = 0xFF;
     }
 }
+#endif
 
 void draw_tiles()
 {
@@ -323,6 +352,37 @@ void render_sprites(int pixel, u_int8 ly, int count, int sprite_size, struct spr
     }
 }
 
+#ifndef EMSCRIPTEN
+void draw_pixel(int pixel, int colour_id)
+{
+    int red = 0;
+    int green = 0;
+    int blue = 0;
+    u_int8 ly = memory[0xff44];
+
+    // shade for current pixel
+    if (colour_id == 0) {
+        red = green = blue = 0xFF;
+    } else if (colour_id == 1) {
+        red = green = blue = 0xCC;
+    } else if (colour_id == 2) {
+        red = green = blue = 0x77;
+    }
+    // set pixel value
+    screen[ly][pixel][0] = red;
+    screen[ly][pixel][1] = green;
+    screen[ly][pixel][2] = blue;
+
+    int idx = 160 * 3 * ly + 3 * pixel;
+    unsigned char *p = (unsigned char *)screen_surface->pixels;
+
+    p[idx + 0] = red;
+    p[idx + 1] = green;
+    p[idx + 2] = blue;
+}
+#endif
+
+#ifdef EMSCRIPTEN
 void draw_pixel(int pixel, int colour_id)
 {
     int red = 0;
@@ -345,12 +405,11 @@ void draw_pixel(int pixel, int colour_id)
 
     int idx = 160 * 3 * ly + 3 * pixel;
 
-    unsigned char * pixels = (unsigned char *)screen_surface->pixels;
-
     pixels[idx + 0] = red;
     pixels[idx + 1] = green;
     pixels[idx + 2] = blue;
 }
+#endif
 
 int skip_sprite(int pixel, u_int8 ly)
 {
@@ -444,6 +503,7 @@ void sort_sprites(struct sprite spr[], int n)
     }
 }
 
+#ifndef EMSCRIPTEN
 // renders the next frame
 void draw_frame()
 {
@@ -464,6 +524,7 @@ void draw_frame()
     SDL_RenderPresent(renderer);
     SDL_DestroyTexture(screenTexture);
 }
+#endif
 
 // switch current lcd mode
 void switch_mode(int mode)

@@ -16,6 +16,10 @@
  *
  */
 
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
+
 #include "joypad.h"
 #include "cpu.h"
 #include "memory.h"
@@ -47,81 +51,38 @@ void handle_keydown(int n)
     reset_bit(&joypad, n);
 }
 
+#ifndef EMSCRIPTEN
 void on_keydown(SDL_Keycode code)
 {
     switch (code) {
-        case SDLK_KP_PLUS:
-            cap = 0; 
-            break;
-        case SDLK_q:
-            debug = 1; 
-            break;
-        case SDLK_LEFT:
-            handle_keydown(1);
-            break;
-        case SDLK_RIGHT:
-            handle_keydown(0);
-            break;
-        case SDLK_UP:
-            handle_keydown(2);
-            break;
-        case SDLK_DOWN: 
-            handle_keydown(3);
-            break;
-        case SDLK_RETURN: 
-            handle_keydown(7);
-            break;
-        case SDLK_z: 
-            handle_keydown(5);
-            break;
-        case SDLK_x: 
-            handle_keydown(4);
-            break;
-        case SDLK_RSHIFT: 
-            handle_keydown(6);
-            break;
-        case SDLK_s: 
-            save_request = 1; 
-            break;
-        case SDLK_l: 
-            load_request = 1; 
-            break;
-        case SDLK_r: 
-            restart(); 
-            break;
+        case SDLK_KP_PLUS: cap = 0; break;
+        case SDLK_q: debug = 1; break;
+        case SDLK_LEFT: handle_keydown(1); break;
+        case SDLK_RIGHT: handle_keydown(0); break;
+        case SDLK_UP: handle_keydown(2); break;
+        case SDLK_DOWN: handle_keydown(3); break;
+        case SDLK_RETURN: handle_keydown(7); break;
+        case SDLK_z: handle_keydown(5); break;
+        case SDLK_x: handle_keydown(4); break;
+        case SDLK_RSHIFT: handle_keydown(6); break;
+        case SDLK_s: save_request = 1; break;
+        case SDLK_l: load_request = 1; break;
+        case SDLK_r: restart(); break;
     }
 }
 
 void on_keyup(SDL_Keycode code)
 {
     switch (code) {
-        case SDLK_KP_PLUS: 
-            cap = 1; 
-            break;
-        case SDLK_LEFT: 
-            set_bit(&joypad,1); 
-            break;
-        case SDLK_RIGHT: 
-            set_bit(&joypad,0); 
-            break;
-        case SDLK_UP: 
-            set_bit(&joypad,2); 
-            break;
-        case SDLK_DOWN: 
-            set_bit(&joypad,3); 
-            break;
-        case SDLK_RETURN: 
-            set_bit(&joypad,7); 
-            break;
-        case SDLK_z: 
-            set_bit(&joypad,5); 
-            break;
-        case SDLK_x: 
-            set_bit(&joypad,4); 
-            break;
-        case SDLK_RSHIFT: 
-            set_bit(&joypad,6); 
-            break;
+        case SDLK_KP_PLUS: cap = 1; break;
+        case SDLK_LEFT: set_bit(&joypad,1); break;
+        case SDLK_RIGHT: set_bit(&joypad,0); break;
+        case SDLK_UP: set_bit(&joypad,2); break;
+        case SDLK_DOWN: set_bit(&joypad,3); break;
+        case SDLK_RETURN: set_bit(&joypad,7); break;
+        case SDLK_z: set_bit(&joypad,5); break;
+        case SDLK_x: set_bit(&joypad,4); break;
+        case SDLK_RSHIFT: set_bit(&joypad,6); break;
     }
 }
 
@@ -129,11 +90,40 @@ void on_keyup(SDL_Keycode code)
 void update_joypad(SDL_KeyboardEvent *key)
 {
     switch (key->type) {
-        case SDL_KEYDOWN: 
-            on_keydown(key->keysym.sym); 
-            break;
-        case SDL_KEYUP:
-            on_keyup(key->keysym.sym); 
-            break;
+        case SDL_KEYDOWN: on_keydown(key->keysym.sym); break; 
+        case SDL_KEYUP: on_keyup(key->keysym.sym); break;
     }
 }
+#endif
+
+#ifdef EMSCRIPTEN
+EMSCRIPTEN_KEEPALIVE
+void keyPress(int keyCode)
+{
+    handle_keydown(keyCode);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void keyRelease(int keyCode)
+{
+    set_bit(&joypad, keyCode);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setSaveRequest()
+{
+    save_request = 1;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void setLoadRequest()
+{
+    load_request = 1;
+}
+
+EMSCRIPTEN_KEEPALIVE
+void restartPress()
+{
+    restart();
+}
+#endif

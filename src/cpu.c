@@ -17,7 +17,11 @@
  */
 
 #include <stdlib.h>
+
+#ifndef EMSCRIPTEN
 #include <SDL2/SDL.h>
+SDL_Event event;
+#endif
 
 #include "cpu.h"
 #include "opcodes.h"
@@ -81,7 +85,6 @@ const double FRAMES_PER_SECOND = 60;
 int cap, program_running;
 double start_time, end_time;
 int fps_count;
-SDL_Event event;
 
 void start_cpu()
 {
@@ -105,7 +108,6 @@ void start_cpu()
     int n = (int)strtol(p,NULL,16);
     program_running = 1;
     cap = 1;
-    init_sound();
     // start_main_loop();
 }
 
@@ -115,6 +117,7 @@ void start_main_loop() {
     }
 }
 
+#ifndef EMSCRIPTEN
 void get_next_frame() {
     start_time = SDL_GetTicks();
     while (fps_count <= 70224) {
@@ -127,7 +130,7 @@ void get_next_frame() {
             SDL_Delay((1000.0 / FRAMES_PER_SECOND) - (end_time - start_time));
         }
     }
-    update_sound();
+    update_sound(counter);
     fps_count -= 70224;
 }
 
@@ -140,6 +143,7 @@ void update_frame(SDL_Event *event)
             case SDL_QUIT: program_running = 0; break;
         }
     }
+
     check_interrupts();
     counter = delay;
     delay = 0;
@@ -155,6 +159,35 @@ void update_frame(SDL_Event *event)
     update_timers(counter);
     update_serial(counter);
 }
+#endif // ifndef EMSCRIPTEN
+
+#ifdef EMSCRIPTEN
+void get_next_frame() {
+    while (fps_count <= 70224) {
+        update_frame();
+    }
+    fps_count -= 70224;
+}
+
+void update_frame()
+{
+    check_interrupts();
+    counter = delay;
+    delay = 0;
+    if (!halt) {
+        opcode = read_memory(pc.PC++);
+        counter += op_cycles[opcode];
+        process_opcode();
+    } else {
+        counter += 4;
+    }
+    fps_count += counter;
+    update_lcd(counter);
+    update_timers(counter);
+    update_serial(counter);
+    update_sound(counter);
+}
+#endif
 
 void update_serial(int cycles)
 {

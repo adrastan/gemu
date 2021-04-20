@@ -14,19 +14,17 @@ C_OBJS=obj/cpu.o obj/interrupts.o obj/joypad.o \
 C++_OBJS=obj/main.o obj/sound.o obj/Basic_Gb_Apu.o obj/Sound_Queue.o obj/Multi_Buffer.o obj/Gb_Oscs.o \
 	obj/Gb_Apu.o obj/Blip_Buffer.o
 
-EMC_OBJS=emc/obj/main.o emc/obj/sound.o emc/obj/Basic_Gb_Apu.o emc/obj/Sound_Queue.o emc/obj/Multi_Buffer.o emc/obj/Gb_Oscs.o \
-	emc/obj/Gb_Apu.o emc/obj/Blip_Buffer.o \
-	emc/obj/cpu.o emc/obj/interrupts.o emc/obj/joypad.o \
+EMC_OBJS=emc/obj/sound.o emc/obj/cpu.o emc/obj/interrupts.o emc/obj/joypad.o \
 	emc/obj/lcd_controller.o emc/obj/memory.o emc/obj/opcodes.o emc/obj/pre_opcodes.o emc/obj/registers.o \
-	emc/obj/timers.o
+	emc/obj/timers.o emc/obj/emc.o
 
 C_FLAGS=-Wall -O2
 
 SDL_CFLAGS := $(shell sdl2-config --cflags)
 SDL_LDFLAGS := $(shell sdl2-config --libs)
 
-emc	: clean $(EMC_OBJS)
-	emcc -o emc/gemu.html $(EMC_OBJS) -s USE_SDL=2 --preload-file games/tetris.gb
+web	: clean $(EMC_OBJS)
+	emcc -o emc/gemu.html --shell-file emc/shell.html $(EMC_OBJS) --preload-file games/tetris.gb
 
 emc/obj/%.o : src/%.cpp
 	emcc $(INC) $(SDL_INC) -O2 -c $< -o $@
@@ -44,7 +42,7 @@ emc/obj/%.o : src/%.c
 	emcc $(INC) $(SDL_INC) -O2 -c $< -o $@
 
 
-all : clean main.exe
+pc : clean main.exe
 
 main.exe : $(C_OBJS) $(C++_OBJS)
 	g++ -o main.exe $(C_OBJS) $(C++_OBJS) $(C_FLAGS) $(LIB) $(SDL_LDFLAGS)

@@ -83,6 +83,7 @@ static inline u_int8 read_memory(u_int16 address)
 
 static inline void write_memory(u_int16 address, u_int8 byte)
 {
+    do_sound(address, byte);
     // ram area
     if (address >= 0xA000 && address <= 0xBFFF) {
         if (!ram_enabled) return;
@@ -92,10 +93,6 @@ static inline void write_memory(u_int16 address, u_int8 byte)
             write_rtc(ram_bank, byte);
         }
         return;
-    }
-    // sound area
-    if (address >= 0xff10 && address <= 0xff3f) {
-        do_sound(address,byte);
     }
     // DMA transfer
     if (address == 0xff46) {

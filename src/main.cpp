@@ -22,15 +22,12 @@
 #include <string.h>
 #include <iostream>
 
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#endif
-
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 #include "cpu.h"
+#include "sound.h"
 #ifdef __cplusplus
 }
 #endif
@@ -50,25 +47,11 @@ void stop_SDL(void);
 void init_SDL(void);
 void start_emulator(char *);
 
-#ifdef __EMSCRIPTEN__
-int main(int argc, char** args)
-{
-	printf("Main started\n");
-	init_SDL();
-	start_cpu();
-	printf("Starting main loop...\n");
-	emscripten_set_main_loop(get_next_frame, 0, 1);
-	return 0;
-}
-#endif
-
-#ifndef __EMSCRIPTEN__
 int main(int argc, char** args)
 {
 	start_emulator(args[1]);
 	return 0;
 }
-#endif
 
 void start_emulator(char* game)
 {
@@ -78,6 +61,7 @@ void start_emulator(char* game)
 	
 	init_SDL();
 	start_cpu();
+	init_sound();
 	start_main_loop();
 	stop_SDL();
 }

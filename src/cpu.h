@@ -20,7 +20,16 @@
 #define CPU_H
 
 #include <stdio.h>
+
+#ifndef EMSCRIPTEN
 #include <SDL2/SDL.h>
+void update_frame(SDL_Event *);
+#endif
+
+#ifdef EMSCRIPTEN
+void update_frame(void);
+#endif
+
 #include "cpu_types.h"
 
 extern int debug;
@@ -71,6 +80,5 @@ void save_state(void);
 void load_state(void);
 u_int8* get_state(void);
 void restart(void);
-void update_frame(SDL_Event *);
 
 #endif // CPU_H
