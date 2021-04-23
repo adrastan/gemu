@@ -98,7 +98,7 @@ EM_JS(void, call_update_sound, (int cycles), {
 
 void sync_sound(u_int16 address, u_int8 byte)
 {
-	// call_write_memory((int) address, (int) byte);
+	call_write_memory((int) address, (int) byte);
 }
 
 void update_sound(int cycles)

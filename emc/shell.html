@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
+    <title>Emscripten-Generated Code</title>
+    <style>
+      canvas {
+        border: none;
+        margin: none;
+        padding: none;
+      }
+
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+
+      html, body {
+        height: 100%;
+      }
+
+      #canvas-container {
+        height: 100%;
+        overflow-y: scroll;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="canvas-container">
+      <canvas id="canvas"></canvas>
+    </div>
+  </body>
+
+  <script type='text/javascript'>
+    document.getElementById("canvas").addEventListener("webglcontextlost", (e) => {
+      alert('WebGL context lost. You will need to reload the page.'); 
+      e.preventDefault(); 
+    })
+    var Module = {
+      preRun: [],
+      postRun: [],
+      print(text) {
+        console.log(text);
+      },
+      printErr: function(text) {
+        if (arguments.length > 1) text = Array.prototype.slice.call(arguments).join(' ');
+        console.error(text);
+      },
+      canvas: document.createElement("canvas")
+    };
+  </script>
+  <script>
+    let setBit = function(byte, n) {
+      byte |= 1 << n;
+      return byte;
+    }
+
+    let clearBit = function(byte, n) {
+      byte &= ~(1 << n);
+      return byte;
+    }
+
+    let getBit = function(byte, n) {
+      return 0x01 & (byte >> n)
+    }
+
+    let isSet = function(byte, n) {
+      return getBit(byte, n) === 1;
+    }
+  </script>
+  <script src="sound.js"></script>
+  {{{ SCRIPT }}}
+
+  <script>
+    let getImageData = function() {
+      Module._getNextFrame();
+      let buffer = new Uint8ClampedArray(Module.HEAPU8.buffer, Module._getScreenSurfacePtr(), 69120);
+      let bufIdx = 0;
+      let pixelBuffer = new ArrayBuffer(92160);
+      let view = new Uint8ClampedArray(pixelBuffer);
+      for (let i = 0; i < view.length; i += 4) {
+        view[i] = buffer[bufIdx];
+        view[i + 1] = buffer[bufIdx + 1];
+        view[i + 2] = buffer[bufIdx + 2];
+        view[i + 3] = 255;
+        bufIdx += 3;
+      }
+      return new ImageData(view, 160);
+    }
+
+    let mainCanvas = document.getElementById("canvas");
+    mainCanvas.width = 160 * 3;
+    mainCanvas.height = 144 * 3;
+    let smallCanvas = document.createElement("canvas");
+    smallCanvas.width = 160;
+    smallCanvas.height = 144;
+    let mainCtx = mainCanvas.getContext("2d");
+    let smallCtx = smallCanvas.getContext("2d");
+
+    let write_memory = function(address, byte) {
+      if (address >= 0xff10 && address <= 0xff3f) {
+        memory[address] = byte;
+        audio.write(address, byte);
+      }  
+    }
+
+    let update_sound = function(clock) {
+      // memory = new Uint8Array(Module.HEAPU8.buffer, Module._getMemoryPtr(), 0x10000);
+      audio.update(clock);
+    }
+
+    let draw = function() {
+      smallCtx.putImageData(getImageData(), 0, 0);
+      mainCtx.imageSmoothingEnabled = false;
+      mainCtx.drawImage(smallCanvas, 0, 0, 160, 144, 0, 0, 160 * 3, 144 * 3);
+
+      audio.endFrame();
+      window.requestAnimationFrame(draw);
+    }
+
+    let memory, memoryBuffer;
+
+    let fn = function() {
+      memory = new Uint8Array(Module.HEAPU8.buffer, Module._getMemoryPtr(), 0x10000);
+      audio = new SoundController();
+      window.requestAnimationFrame(draw);
+    }
+
+    Module.onRuntimeInitialized = fn;
+
+    document.addEventListener("keydown", function(e) {
+      if (e.keyCode === 13) {
+        Module._keyPress(7);
+      }
+      if (e.keyCode === 38) {
+        Module._keyPress(2);
+      }
+      if (e.keyCode === 39) {
+        Module._keyPress(0);
+      }
+      if (e.keyCode === 40) {
+        Module._keyPress(3);
+      }
+      if (e.keyCode === 37) {
+        Module._keyPress(1);
+      }
+      if (e.keyCode === 90) {
+        Module._keyPress(5);
+      }
+      if (e.keyCode === 88) {
+        Module._keyPress(4);
+      }
+      if (e.keyCode === 16) {
+        Module._keyPress(6);
+      }
+      if (e.keyCode === 82) {
+        Module._restartPress();
+      }
+    })
+
+    document.addEventListener("keyup", function(e) {
+      if (e.keyCode === 13) {
+        Module._keyRelease(7);
+      }
+      if (e.keyCode === 38) {
+        Module._keyRelease(2);
+      }
+      if (e.keyCode === 39) {
+        Module._keyRelease(0);
+      }
+      if (e.keyCode === 40) {
+        Module._keyRelease(3);
+      }
+      if (e.keyCode === 37) {
+        Module._keyRelease(1);
+      }
+      if (e.keyCode === 90) {
+        Module._keyRelease(5);
+      }
+      if (e.keyCode === 88) {
+        Module._keyRelease(4);
+      }
+      if (e.keyCode === 16) {
+        Module._keyRelease(6);
+      }
+    })
+  </script>
+</html>

@@ -11,4 +11,4 @@ games
 *.SAVE
 node_modules
 *.wasm
-emc
+emc/gemu.*
