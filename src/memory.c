@@ -209,3 +209,41 @@ void init_sound_regs()
     memory[0xFF26] = 0xF1;
 }
 
+void init_wave_ram() {
+    memory[0xFF30] = 0;
+    memory[0xFF31] = 0xFF;
+    memory[0xFF32] = 0;
+    memory[0xFF33] = 0xFF;
+    memory[0xFF34] = 0;
+    memory[0xFF35] = 0xFF;
+    memory[0xFF36] = 0;
+    memory[0xFF37] = 0xFF;
+    memory[0xFF38] = 0;
+    memory[0xFF39] = 0xFF;
+    memory[0xFF3A] = 0;
+    memory[0xFF3B] = 0xFF;
+    memory[0xFF3C] = 0;
+    memory[0xFF3D] = 0xFF;
+    memory[0xFF3E] = 0;
+    memory[0xFF3F] = 0xFF;
+}
+
+void clear_sound_regs() {
+    memory[0xFF10] = 0;
+    memory[0xFF11] = 0;
+    memory[0xFF12] = 0;
+    memory[0xFF14] = 0;
+    memory[0xFF16] = 0;
+    memory[0xFF17] = 0;
+    memory[0xFF19] = 0;
+    memory[0xFF1A] = 0;
+    memory[0xFF1B] = 0;
+    memory[0xFF1C] = 0;
+    memory[0xFF1E] = 0;
+    memory[0xFF20] = 0;
+    memory[0xFF21] = 0;
+    memory[0xFF22] = 0;
+    memory[0xFF23] = 0;
+    memory[0xFF24] = 0;
+    memory[0xFF25] = 0;
+}

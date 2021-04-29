@@ -43,6 +43,33 @@ int * getMemoryPtr() {
 
 }
 
+int is_enabled() {
+	return is_set(memory[0xFF26], 7);
+}
+
+void update_sound_control(u_int8 byte) {
+	if (byte == 0) {
+		memory[0xFF26] = 0x70;
+		clear_sound_regs();
+	} else if (is_set(byte, 7)) {
+		memory[0xFF26] = 0xF0;
+	}
+}
+
+void update_apu(u_int16 address, u_int8 byte) {
+	// wave ram
+    if (address >= 0xFF30 && address <= 0xFF3F) {
+        memory[address] = byte;
+		return;
+    }
+
+	if (address == 0xFF26) {
+		update_sound_control(byte);
+	} else if (is_enabled()) {
+		memory[address] = byte;
+	}
+}
+
 #ifndef EMSCRIPTEN
 #include <Basic_Gb_Apu.h>
 #include <Multi_Buffer.h>
@@ -50,6 +77,7 @@ int * getMemoryPtr() {
 
 static Basic_Gb_Apu apu;
 static Sound_Queue sound;
+
 
 static void handle_error( const char* str )
 {
@@ -72,6 +100,7 @@ void init_sound()
 
 void sync_sound(u_int16 address, u_int8 byte)
 {
+	update_apu(address, byte);
 	apu.write_register( address, byte);
 }
 
@@ -98,6 +127,7 @@ EM_JS(void, call_update_sound, (int cycles), {
 
 void sync_sound(u_int16 address, u_int8 byte)
 {
+	update_apu(address, byte);
 	call_write_memory((int) address, (int) byte);
 }
 

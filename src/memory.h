@@ -46,6 +46,8 @@ u_int8 get_rtc(void);
 void write_rtc(u_int8,u_int8);
 void do_sound(u_int16,u_int8);
 void init_sound_regs(void);
+void clear_sound_regs(void);
+void init_wave_ram(void);
 
 static inline u_int8 _read_ram(u_int16 address)
 {
@@ -78,67 +80,145 @@ static inline u_int8 read_memory(u_int16 address)
     if (address == 0xff00) {
         return joypad_state();
     }
+
+    if (address == 0xff10) {
+        return memory[address] | 0x80;
+    }
+    if (address == 0xff11) {
+        return memory[address] | 0x3F;
+    }
+    if (address == 0xff12) {
+        return memory[address] | 0x00;
+    }
+    if (address == 0xff13) {
+        return memory[address] | 0xFF;
+    }
+    if (address == 0xff14) {
+        return memory[address] | 0xBF;
+    }
+
+    if (address == 0xff15) {
+        return memory[address] | 0xFF;
+    }
+    if (address == 0xff16) {
+        return memory[address] | 0x3F;
+    }
+    if (address == 0xff17) {
+        return memory[address] | 0x00;
+    }
+    if (address == 0xff18) {
+        return memory[address] | 0xFF;
+    }
+    if (address == 0xff19) {
+        return memory[address] | 0xBF;
+    }
+
+    if (address == 0xff1a) {
+        return memory[address] | 0x7F;
+    }
+    if (address == 0xff1b) {
+        return memory[address] | 0xFF;
+    }
+    if (address == 0xff1c) {
+        return memory[address] | 0x9F;
+    }
+    if (address == 0xff1d) {
+        return memory[address] | 0xFF;
+    }
+    if (address == 0xff1e) {
+        return memory[address] | 0xBF;
+    }
+
+    if (address == 0xff1f) {
+        return memory[address] | 0xFF;
+    }
+    if (address == 0xff20) {
+        return memory[address] | 0xFF;
+    }
+    if (address == 0xff21) {
+        return memory[address] | 0x00;
+    }
+    if (address == 0xff22) {
+        return memory[address] | 0x00;
+    }
+    if (address == 0xff23) {
+        return memory[address] | 0xBF;
+    }
+
+    if (address == 0xff24) {
+        return memory[address] | 0x00;
+    }
+    if (address == 0xff24) {
+        return memory[address] | 0x00;
+    }
+    if (address == 0xff24) {
+        return memory[address] | 0x70;
+    }
+
+    if (address >= 0xff27 && address <= 0xff2f) {
+        return 0xff;
+    }
     return memory[address];
 }
 
 static inline void write_memory(u_int16 address, u_int8 byte)
 {
-    do_sound(address, byte);
+    if (address >= 0xFF10 && address <= 0xFF3F) {
+        do_sound(address, byte);
+    }
     // ram area
-    if (address >= 0xA000 && address <= 0xBFFF) {
+    else if (address >= 0xA000 && address <= 0xBFFF) {
         if (!ram_enabled) return;
         if (ram_bank <= 3) {
             cart_ram[(address - 0xA000) + (ram_bank * 8192)] = byte;
         } else {
             write_rtc(ram_bank, byte);
         }
-        return;
     }
     // DMA transfer
-    if (address == 0xff46) {
+    else if (address == 0xff46) {
         do_dma(byte);
+        memory[address] = byte;
     }
     // joypad
-    if (address == 0xff00) {
+    else if (address == 0xff00) {
         memory[address] &= 0xCF;
         memory[address] |= (byte & 0x30);
-        return;
     }
     // enable lcd
-    if (address == 0xff40) {
+    else if (address == 0xff40) {
         if (is_set(byte,7) && !is_set(memory[address],7)) {
             switch_mode(2);
             fps_count = 0;
         }
+        memory[address] = byte;
     }
     // reset timers
-    if (address == 0xff04) {
+    else if (address == 0xff04) {
         memory[address] = 0;
         memory[address+1] = 0;
-        return;
     }
     // banking control
-    if (address < 0x8000) {
+    else if (address < 0x8000) {
         do_banking(address, byte);
-        return;
     }
     // echo memory
-    if (address >= 0xE000 && address < 0xFE00) {
+    else if (address >= 0xE000 && address < 0xFE00) {
         memory[address] = byte;
         memory[address-0x2000] = byte;
-        return;
     }
     // echo memory
-    if (address >= 0xC000 && address < 0xDE00) {
+    else if (address >= 0xC000 && address < 0xDE00) {
         memory[address] = byte;
         memory[address+0x2000] = byte;
-        return;
     }
     // unusable memory
-    if (address >= 0xFEA0 && address <= 0xFEFF) {
+    else if (address >= 0xFEA0 && address <= 0xFEFF) {
         return;
     }
-    memory[address] = byte;
+    else {
+        memory[address] = byte;
+    }
 }
 
 #endif // MEMORY_H

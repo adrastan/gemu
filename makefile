@@ -24,7 +24,7 @@ SDL_CFLAGS := $(shell sdl2-config --cflags)
 SDL_LDFLAGS := $(shell sdl2-config --libs)
 
 web	: clean $(EMC_OBJS)
-	emcc -o emc/gemu.html --shell-file emc/shell.html $(EMC_OBJS) --preload-file games/tetris.gb
+	emcc -o emc/gemu.html --shell-file emc/shell.html $(EMC_OBJS) --preload-file games
 
 emc/obj/%.o : src/%.cpp
 	emcc $(INC) $(SDL_INC) -O2 -c $< -o $@

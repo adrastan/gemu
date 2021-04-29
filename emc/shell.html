@@ -36,6 +36,8 @@
     </div>
   </body>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.17/Tone.js"></script>
+
   <script type='text/javascript'>
     document.getElementById("canvas").addEventListener("webglcontextlost", (e) => {
       alert('WebGL context lost. You will need to reload the page.'); 
@@ -73,7 +75,9 @@
       return getBit(byte, n) === 1;
     }
   </script>
-  <script src="sound.js"></script>
+  <script src="sound/SoundController.js"></script>
+  <script src="sound/Square1.js"></script>
+  <script src="sound/Square2.js"></script>
   {{{ SCRIPT }}}
 
   <script>
@@ -106,19 +110,19 @@
       if (address >= 0xff10 && address <= 0xff3f) {
         memory[address] = byte;
         audio.write(address, byte);
-      }  
+      }
     }
 
-    let update_sound = function(clock) {
+    let update_sound = function(cycles) {
       // memory = new Uint8Array(Module.HEAPU8.buffer, Module._getMemoryPtr(), 0x10000);
-      audio.update(clock);
+      audio.updateCycles(cycles);
     }
 
     let draw = function() {
       smallCtx.putImageData(getImageData(), 0, 0);
       mainCtx.imageSmoothingEnabled = false;
       mainCtx.drawImage(smallCanvas, 0, 0, 160, 144, 0, 0, 160 * 3, 144 * 3);
-
+      
       audio.endFrame();
       window.requestAnimationFrame(draw);
     }
@@ -134,31 +138,32 @@
     Module.onRuntimeInitialized = fn;
 
     document.addEventListener("keydown", function(e) {
-      if (e.keyCode === 13) {
+      if (e.keyCode === 13) { //START
         Module._keyPress(7);
       }
-      if (e.keyCode === 38) {
+      if (e.keyCode === 38) { //UP
         Module._keyPress(2);
       }
-      if (e.keyCode === 39) {
+      if (e.keyCode === 39) { //RIGHT
         Module._keyPress(0);
       }
-      if (e.keyCode === 40) {
+      if (e.keyCode === 40) { //DOWN
         Module._keyPress(3);
       }
-      if (e.keyCode === 37) {
+      if (e.keyCode === 37) { //LEFT
         Module._keyPress(1);
       }
-      if (e.keyCode === 90) {
+      if (e.keyCode === 90) { //Z
         Module._keyPress(5);
       }
-      if (e.keyCode === 88) {
+      if (e.keyCode === 88) { //X
         Module._keyPress(4);
       }
-      if (e.keyCode === 16) {
+      if (e.keyCode === 16) { //RSHIFT
         Module._keyPress(6);
       }
-      if (e.keyCode === 82) {
+      if (e.keyCode === 82) { //R
+        audio.restart();
         Module._restartPress();
       }
     })

@@ -91,7 +91,7 @@ void start_cpu()
     printf("Starting cpu...\n");
     FILE *fp;
     if (file_location == NULL) {
-        fp = fopen("games/tetris.gb", "rb");
+        fp = fopen("games/02-len ctr.gb", "rb");
     } else {
         fp = fopen(file_location, "rb");
     }
@@ -304,6 +304,7 @@ void init_regs()
     write_memory(0xFF06, 0x00);
     write_memory(0xFF07, 0x00);
     init_sound_regs();
+    init_wave_ram();
     write_memory(0xFF30, 0x84);
     write_memory(0xFF31, 0x40);
     write_memory(0xFF32, 0x43);
@@ -489,6 +490,7 @@ void restart()
     set_clock_freq();
     switch_mode(2);
     init_regs();
+    init_sound_regs();
     debug = 0;
     save_request = 0;
     load_request = 0;
