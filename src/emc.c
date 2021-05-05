@@ -32,7 +32,13 @@ void getNextFrame()
 	get_next_frame();
 }
 
-int main(int argc, char** args)
+EMSCRIPTEN_KEEPALIVE
+void startCpu()
 {
 	start_cpu();
+}
+
+int main(int argc, char** args)
+{
+	// start_cpu();
 }

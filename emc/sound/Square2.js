@@ -1,144 +1,54 @@
-class Square2 {
+class Square2 extends Square {
+
   constructor(ctx) {
-    this.ctx = ctx;
-    this.enabled = false;
-    this.lengthEnabled = false;
-    this.soundLength = 0;
+    super(ctx);
+    this.channelName = "channel2"
   }
 
-  getWaveDuty(value) {
-    switch (value) {
-      case 0: return -0.25;
-      case 1: return -0.5;
-      case 2: return 0;
-      case 3: return 0.5;
-    }
-  }
-  
-  clockLength() {
-    if (this.lengthEnabled && this.soundLength) {
-      this.soundLength--;
-      if (this.soundLength == 0) {
-        this.disable();
-      }
-    }
+  get NR21() { return this._NR21; };
+  get NR22() { return this._NR22; };
+  get NR23() { return this._NR23; };
+  get NR24() { return this._NR24; };
+
+  set NR21(value) {
+    this._NR21 = value;
+    this.waveDuty = this.getWaveDuty((value >> 6));
+    // this.soundLength = (64 - (value & 0x3F)) * (1 / 256); //seconds
+    this.soundLength = 64 - (value & 0x3F);
   }
 
-  clockEnvelope() {
-    if (this.envelopePeriod) {
-      if (this.increaseVolume && this.envelopeVolume < 15) {
-        this.envelopeVolume++;
-        this.rampGain();
-      } else if (!this.increaseVolume && this.envelopeVolume > 0) {
-        this.envelopeVolume--;
-        this.rampGain();
-      }
+  set NR22(value) {
+    this._NR22 = value;
+    this.envelopeVolume = value >> 4;
+    this.increaseVolume = isSet(value, 3);
+    // this.envelopePeriod = (value & 0x07) * (1 / 64); //seconds
+    this.envelopePeriod = (value & 0x07);
+    if ((value >> 3) == 0) {
+      this.dacEnabled = false;
+      this.disable();
+    } else {
+      this.dacEnabled = true;
     }
   }
 
-  rampGain() {
-    let time = this.ctx.currentTime + (this.envelopePeriod * (1 / 64));
-    this.gain.gain.linearRampToValueAtTime((this.envelopeVolume / 15), time);
+  set NR23(value) {
+    this._NR23 = value;
+    this.frequency = this.getFrequency(value, this.NR24);
   }
 
-  disable() {
-    this.enabled = false;
-    this.stop();
-  }
-
-  enable() {
-    this.enabled = true;
-  }
-
-  playTone() {
-    if (!this.enabled) {
-      return;
-    }
-    this.stop();
-
-    this.gain = this.ctx.createGain();
-    this.gain.gain.setValueAtTime(this.envelopeVolume / 15, this.ctx.currentTime);
-    this.osc = this.ctx.createOscillator();
-    this.osc.type = "triangle";
-    this.osc.frequency.setValueAtTime(this.frequency, this.ctx.currentTime);
-    this.waveShaper = this.ctx.createWaveShaper();
-    this.waveShaper.curve = this.getCurve(val => val <= 0 ? -1 : 1);
-
-    this.constantSource = this.ctx.createConstantSource();
-    let g = this.ctx.createGain();
-    g.gain.setValueAtTime(this.waveDuty || 0, this.ctx.currentTime);
-    this.constantSource.connect(g);
-    g.connect(this.waveShaper);
-    this.constantSource.start();
-
-    this.osc.connect(this.waveShaper);
-    this.waveShaper.connect(this.gain);
-    this.gain.connect(this.ctx.destination);
-
-    this.osc.start();
-  }
-
-  getCurve(mapping, length = 1024) {
-    const array = new Float32Array(length);
-    for (let i = 0, len = length; i < len; i++) {
-      const normalized = (i / (len - 1)) * 2 - 1;
-      array[i] = mapping(normalized, i);
-    }
-    return array;
-  }
-
-  stop() {
-    if (this.osc) {
-      this.osc.stop();
-    }
-    if (this.constantSource) {
-      this.constantSource.stop();
+  set NR24(value) {
+    this._NR24 = value;
+    this.lengthEnabled = isSet(value, 6);
+    this.frequency = this.getFrequency(this.NR23, value);
+    if (isSet(value, 7)) {
+      this.trigger();
     }
   }
 
-  // 00000000
-  update(address, byte) {
-    if (address == 0xff16) {
-      this.waveDuty = this.getWaveDuty((byte >> 6) & 3);
-      this.soundLength = byte & 0x3f;
-    }
-    if (address == 0xff17) {
-      this.volume = (byte >> 4) & 0x0f;
-      this.increaseVolume = isSet(byte, 3);
-      this.envelopePeriod = byte & 7;
-    }
-    if (address == 0xff18) {
-      this.frequency = this.getFrequency();
-    }
-    if (address == 0xff19) {
-      this.updateChannelControl(byte);
-    }
-  }
-
-  updateChannelControl(byte) {
-    if (isSet(byte, 7)) {
-      this.enable();
-      this.restart();
-    }
-    this.lengthEnabled = isSet(byte, 6);
-  }
-
-  restart() {
-    if (this.soundLength == 0) {
-      this.soundLength = 64;
-    }
-    this.frequency = this.getFrequency();
-    this.envelopeVolume = (memory[0xff17] >> 4) & 0x0F;
-    this.playTone();
-  }
-
-  getFrequency() {
-    let lowerFreq = memory[0xff18];
-    let higherFreq = memory[0xff19];
-
-    higherFreq = (0x07 & higherFreq) << 8;
-    let frequency = higherFreq | lowerFreq;
-
-    return 131071 / (2048 - frequency);
+  clear() {
+    this.NR21 = 0;
+    this.NR22 = 0;
+    this.NR23 = 0;
+    this.NR24 = 0;
   }
 }

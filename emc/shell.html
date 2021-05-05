@@ -33,10 +33,11 @@
   <body>
     <div id="canvas-container">
       <canvas id="canvas"></canvas>
+      <button id="startButton">Start</button>
     </div>
   </body>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.17/Tone.js"></script>
+  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.17/Tone.js"></script> -->
 
   <script type='text/javascript'>
     document.getElementById("canvas").addEventListener("webglcontextlost", (e) => {
@@ -75,9 +76,12 @@
       return getBit(byte, n) === 1;
     }
   </script>
+  <script src="sound/Square.js"></script>
   <script src="sound/SoundController.js"></script>
   <script src="sound/Square1.js"></script>
   <script src="sound/Square2.js"></script>
+  <script src="sound/Wave.js"></script>
+  <script src="sound/Noise.js"></script>
   {{{ SCRIPT }}}
 
   <script>
@@ -108,13 +112,11 @@
 
     let write_memory = function(address, byte) {
       if (address >= 0xff10 && address <= 0xff3f) {
-        memory[address] = byte;
         audio.write(address, byte);
       }
     }
 
     let update_sound = function(cycles) {
-      // memory = new Uint8Array(Module.HEAPU8.buffer, Module._getMemoryPtr(), 0x10000);
       audio.updateCycles(cycles);
     }
 
@@ -122,20 +124,26 @@
       smallCtx.putImageData(getImageData(), 0, 0);
       mainCtx.imageSmoothingEnabled = false;
       mainCtx.drawImage(smallCanvas, 0, 0, 160, 144, 0, 0, 160 * 3, 144 * 3);
-      
       audio.endFrame();
-      window.requestAnimationFrame(draw);
+      window.nextFrame = requestAnimationFrame(draw);
     }
 
-    let memory, memoryBuffer;
-
+    let memory;
+    
     let fn = function() {
       memory = new Uint8Array(Module.HEAPU8.buffer, Module._getMemoryPtr(), 0x10000);
-      audio = new SoundController();
-      window.requestAnimationFrame(draw);
+      running = true;
+      window.nextFrame = requestAnimationFrame(draw);
     }
 
-    Module.onRuntimeInitialized = fn;
+    // Module.onRuntimeInitialized = fn;
+
+    document.getElementById("startButton").addEventListener("click", () => {
+      window.cancelAnimationFrame(window.nextFrame);
+      audio = new SoundController();
+      Module._startCpu();
+      fn();
+    })
 
     document.addEventListener("keydown", function(e) {
       if (e.keyCode === 13) { //START

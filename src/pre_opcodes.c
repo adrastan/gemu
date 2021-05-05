@@ -462,7 +462,7 @@ void pre_opcode_46()
 {
     u_int8 byte = read_memory(regs.word.HL);
     BIT(&byte, 0);
-    write_memory(regs.word.HL, byte);
+    memory[regs.word.HL] = byte;
 }
 
 // BIT 0,A
@@ -512,7 +512,7 @@ void pre_opcode_4E()
 {
     u_int8 byte = read_memory(regs.word.HL);
     BIT(&byte, 1);
-    write_memory(regs.word.HL, byte);
+    memory[regs.word.HL] = byte;
 }
 
 // BIT 1,A
@@ -562,7 +562,7 @@ void pre_opcode_56()
 {
     u_int8 byte = read_memory(regs.word.HL);
     BIT(&byte, 2);
-    write_memory(regs.word.HL, byte);
+    memory[regs.word.HL] = byte;
 }
 
 // BIT 2,A
@@ -612,7 +612,7 @@ void pre_opcode_5E()
 {
     u_int8 byte = read_memory(regs.word.HL);
     BIT(&byte, 3);
-    write_memory(regs.word.HL, byte);
+    memory[regs.word.HL] = byte;
 }
 
 // BIT 3,A
@@ -662,7 +662,7 @@ void pre_opcode_66()
 {
     u_int8 byte = read_memory(regs.word.HL);
     BIT(&byte, 4);
-    write_memory(regs.word.HL, byte);
+    memory[regs.word.HL] = byte;
 }
 
 // BIT 4,A
@@ -712,7 +712,7 @@ void pre_opcode_6E()
 {
     u_int8 byte = read_memory(regs.word.HL);
     BIT(&byte, 5);
-    write_memory(regs.word.HL, byte);
+    memory[regs.word.HL] = byte;
 }
 
 // BIT 5,A
@@ -762,7 +762,7 @@ void pre_opcode_76()
 {
     u_int8 byte = read_memory(regs.word.HL);
     BIT(&byte, 6);
-    write_memory(regs.word.HL, byte);
+    memory[regs.word.HL] = byte;
 }
 
 // BIT 6,A
@@ -812,7 +812,7 @@ void pre_opcode_7E()
 {
     u_int8 byte = read_memory(regs.word.HL);
     BIT(&byte, 7);
-    write_memory(regs.word.HL, byte);
+    memory[regs.word.HL] = byte;
 }
 
 // BIT 7,A
