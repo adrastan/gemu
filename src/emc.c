@@ -35,7 +35,25 @@ void getNextFrame()
 EMSCRIPTEN_KEEPALIVE
 void startCpu()
 {
-	start_cpu();
+	start_cpu(NULL);
+}
+
+EMSCRIPTEN_KEEPALIVE
+void startDK()
+{
+	start_cpu("games/donkeykongland.gb");
+}
+
+EMSCRIPTEN_KEEPALIVE
+void startMK2()
+{
+	start_cpu("games/mk2.gb");
+}
+
+EMSCRIPTEN_KEEPALIVE
+void startTetris()
+{
+	start_cpu("games/tetris.gb");
 }
 
 int main(int argc, char** args)

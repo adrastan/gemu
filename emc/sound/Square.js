@@ -5,21 +5,22 @@ class Square {
     this.lengthEnabled = false;
     this.soundLength = 0;
     this.init();
-    this.start();
   }
   
   init() {
     this.gain = this.ctx.createGain();
+    this.gain.gain.value = 0;
     this.osc = this.ctx.createOscillator();
     this.osc.type = "triangle";
-    this.waveShaper = this.ctx.createWaveShaper();
-    this.waveShaper.curve = this.getCurve(val => val <= 0 ? -1 : 1);
-    this.constantSource = this.ctx.createConstantSource();
-    this.g = this.ctx.createGain();
-    this.constantSource.connect(this.g);
-    this.g.connect(this.waveShaper);
-    this.osc.connect(this.waveShaper);
-    this.waveShaper.connect(this.gain);
+    // this.waveShaper = this.ctx.createWaveShaper();
+    // this.waveShaper.curve = this.getCurve(val => val <= 0 ? -1 : 1);
+    // this.constantSource = this.ctx.createConstantSource();
+    // this.g = this.ctx.createGain();
+    // this.constantSource.connect(this.g);
+    // this.g.connect(this.waveShaper);
+    // this.osc.connect(this.waveShaper);
+    // this.waveShaper.connect(this.gain);
+    this.osc.connect(this.gain);
     this.gain.connect(this.ctx.destination);
   }
 
@@ -80,6 +81,7 @@ class Square {
   }
 
   disable() {
+    this.gain.gain.cancelScheduledValues(this.ctx.currentTime);
     this.enabled = false;
     this.envelopeVolume = 0;
     this.mute();
@@ -93,7 +95,7 @@ class Square {
     if (this.frequency == null) return;
     this.gain.gain.setValueAtTime(this.envelopeVolume / 15, this.ctx.currentTime);
     this.osc.frequency.setValueAtTime(this.frequency, this.ctx.currentTime);
-    this.g.gain.setValueAtTime(this.waveDuty || 0, this.ctx.currentTime);
+    // this.g.gain.setValueAtTime(this.waveDuty || 0, this.ctx.currentTime);
   }
 
   getCurve(mapping, length = 1024) {
@@ -108,20 +110,20 @@ class Square {
   start() {
     if (!this.started) {
       this.osc.start();
-      this.constantSource.start();
+      // this.constantSource.start();
     }
     this.started = true;
   }
 
   mute() {
     this.gain.gain.setValueAtTime(0, this.ctx.currentTime);
-    this.g.gain.setValueAtTime(0, this.ctx.currentTime);
+    // this.g.gain.setValueAtTime(0, this.ctx.currentTime);
   }
 
   stop() {
     if (this.started) {
       this.osc.stop();
-      this.constantSource.stop();
+      // this.constantSource.stop();
     }
     this.started = false;
   }

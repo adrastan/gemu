@@ -31,4 +31,8 @@ class Wave {
   update(address, byte) {
 
   }
+
+  stop() {
+    
+  }
 }

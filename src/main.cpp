@@ -60,7 +60,7 @@ void start_emulator(char* game)
 	}
 	
 	init_SDL();
-	start_cpu();
+	start_cpu(NULL);
 	init_sound();
 	start_main_loop();
 	stop_SDL();

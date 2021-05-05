@@ -26,4 +26,8 @@ class Noise {
     this.NR43 = 0;
     this.NR44 = 0;
   }
+
+  stop() {
+    
+  }
 }

@@ -86,12 +86,12 @@ int cap, program_running;
 double start_time, end_time;
 int fps_count;
 
-void start_cpu()
+void start_cpu(char *game)
 {
     printf("Starting cpu...\n");
     FILE *fp;
-    if (file_location == NULL) {
-        fp = fopen("games/donkeykongland.gb", "rb");
+    if (file_location == NULL && game != NULL) {
+        fp = fopen(game, "rb");
     } else {
         fp = fopen(file_location, "rb");
     }
@@ -474,7 +474,6 @@ void restart()
     set_clock_freq();
     switch_mode(2);
     init_regs();
-    init_sound_regs();
     debug = 0;
     save_request = 0;
     load_request = 0;

@@ -50,7 +50,7 @@ extern char * save_file;
 extern char * file_location;
 
 void prepare_file(char*);
-void start_cpu(void);
+void start_cpu(char *);
 void start_main_loop(void);
 void get_next_frame(void);
 u_int8 test_z(void);

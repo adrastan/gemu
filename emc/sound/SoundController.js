@@ -2,10 +2,7 @@
 class SoundController {
   constructor() {
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-    this.channel1 = new Square1(this.ctx);
-    this.channel2 = new Square2(this.ctx);
-    this.channel3 = new Wave(this.ctx);
-    this.channel4 = new Noise(this.ctx);
+    this.initChannels();
     this.frame = 0;
     this.cycles = 0;
     this.regs = {
@@ -18,6 +15,14 @@ class SoundController {
     }
   }
 
+  initChannels() {
+    this.channel1 = new Square1(this.ctx);
+    this.channel2 = new Square2(this.ctx);
+    this.channel3 = new Wave(this.ctx);
+    this.channel4 = new Noise(this.ctx);
+    this.channel1.start();
+  }
+
   endFrame() {
     // this.channel1.start();
     // this.channel2.start();
@@ -26,10 +31,12 @@ class SoundController {
   restart() {
     this.frame = 0;
     this.cycles = 0;
-    this.channel1.disable();
-    this.channel2.disable();
-    this.channel3.disable();
-    this.channel4.disable();
+    this.clearRegs();
+    this.channel1.stop();
+    this.channel2.stop();
+    this.channel3.stop();
+    this.channel4.stop();
+    this.initChannels();
   }
 
   updateCycles(cycles) {
@@ -42,19 +49,6 @@ class SoundController {
   clockFrame() {
     this.cycles -= 8192;
     this.frame++;
-
-    // if (!this.channel1.playing && this.channel1.enabled) {
-    //   this.channel1.start();
-    // }
-    // if (!this.channel2.playing && this.channel2.enabled) {
-    //   this.channel2.start();
-    // }
-    // this.channel1.playTone();
-    // this.channel2.playTone();
-    // if (this.channel1.ready && this.channel2.ready) {
-    //   this.channel1.start();
-    //   this.channel2.start();
-    // }
 
     if (this.frame % 2 == 1) {
       this.channel1.clockLength();
