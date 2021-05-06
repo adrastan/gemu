@@ -12,15 +12,14 @@ class Square {
     this.gain.gain.value = 0;
     this.osc = this.ctx.createOscillator();
     this.osc.type = "triangle";
-    // this.waveShaper = this.ctx.createWaveShaper();
-    // this.waveShaper.curve = this.getCurve(val => val <= 0 ? -1 : 1);
-    // this.constantSource = this.ctx.createConstantSource();
-    // this.g = this.ctx.createGain();
-    // this.constantSource.connect(this.g);
-    // this.g.connect(this.waveShaper);
-    // this.osc.connect(this.waveShaper);
-    // this.waveShaper.connect(this.gain);
-    this.osc.connect(this.gain);
+    this.waveShaper = this.ctx.createWaveShaper();
+    this.waveShaper.curve = this.getCurve(val => val <= 0 ? -1 : 1);
+    this.constantSource = this.ctx.createConstantSource();
+    this.g = this.ctx.createGain();
+    this.constantSource.connect(this.g);
+    this.g.connect(this.waveShaper);
+    this.osc.connect(this.waveShaper);
+    this.waveShaper.connect(this.gain);
     this.gain.connect(this.ctx.destination);
   }
 
@@ -41,16 +40,19 @@ class Square {
   }
 
   trigger() {
-    if (this.soundLength == 0 || !this.lengthEnabled) {
-      if (this.lengthClocked) {
-        this.soundLength = 63;
-      } else {
-        this.soundLength = 64;
-      }
-    }
-    if (!this.dacEnabled) return;
     this.enable();
-    this.playTone();
+    if (this.soundLength == 0) {
+      this.soundLength = this.lengthClocked ? 63 : 64;
+    }
+
+    if (this.started) {
+      this.restart();
+    } else {
+      this.start();
+    }
+    
+    this.osc.frequency.setValueAtTime(this.frequency, this.ctx.currentTime);
+    this.unmute();
   }
 
   clockLength() {
@@ -85,17 +87,12 @@ class Square {
     this.enabled = false;
     this.envelopeVolume = 0;
     this.mute();
+    this.stop();
+    this.init();
   }
 
   enable() {
     this.enabled = true;
-  }
-
-  playTone() {
-    if (this.frequency == null) return;
-    this.gain.gain.setValueAtTime(this.envelopeVolume / 15, this.ctx.currentTime);
-    this.osc.frequency.setValueAtTime(this.frequency, this.ctx.currentTime);
-    // this.g.gain.setValueAtTime(this.waveDuty || 0, this.ctx.currentTime);
   }
 
   getCurve(mapping, length = 1024) {
@@ -107,24 +104,37 @@ class Square {
     return array;
   }
 
+  restart() {
+    this.stop();
+    this.init();
+    this.start();
+  }
+
   start() {
-    if (!this.started) {
-      this.osc.start();
-      // this.constantSource.start();
+    if (this.started) {
+      return;
     }
+    this.osc.start();
+    this.constantSource.start();
     this.started = true;
+  }
+
+  stop() {
+    if (!this.started) {
+      return;
+    }
+    this.osc.stop();
+    this.constantSource.stop();
+    this.started = false;
+  }
+
+  unmute() {
+    this.gain.gain.setValueAtTime(this.envelopeVolume / 15, this.ctx.currentTime);
+    this.g.gain.setValueAtTime(this.waveDuty || 0, this.ctx.currentTime);
   }
 
   mute() {
     this.gain.gain.setValueAtTime(0, this.ctx.currentTime);
-    // this.g.gain.setValueAtTime(0, this.ctx.currentTime);
-  }
-
-  stop() {
-    if (this.started) {
-      this.osc.stop();
-      // this.constantSource.stop();
-    }
-    this.started = false;
+    this.g.gain.setValueAtTime(0, this.ctx.currentTime);
   }
 }

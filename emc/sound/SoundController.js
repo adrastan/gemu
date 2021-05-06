@@ -20,7 +20,7 @@ class SoundController {
     this.channel2 = new Square2(this.ctx);
     this.channel3 = new Wave(this.ctx);
     this.channel4 = new Noise(this.ctx);
-    this.channel1.start();
+    // this.channel1.start();
   }
 
   endFrame() {

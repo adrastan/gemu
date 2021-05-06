@@ -40,7 +40,7 @@ class Square2 extends Square {
     this._NR24 = value;
     this.lengthEnabled = isSet(value, 6);
     this.frequency = this.getFrequency(this.NR23, value);
-    if (isSet(value, 7)) {
+    if (isSet(value, 7) && this.dacEnabled) {
       this.trigger();
     }
   }

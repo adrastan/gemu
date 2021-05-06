@@ -20,7 +20,6 @@ class Square1 extends Square {
     this.waveDuty = this.getWaveDuty((value >> 6));
     // this.soundLength = (64 - (value & 0x3F)) * (1 / 256); //seconds
     this.soundLength = 64 - (value & 0x3F);
-    console.log("NR11", value)
   }
 
   set NR12(value) {
@@ -35,21 +34,18 @@ class Square1 extends Square {
     } else {
       this.dacEnabled = true;
     }
-    console.log("NR12", value);
   }
 
   set NR13(value) {
     this._NR13 = value;
     this.frequency = this.getFrequency(value, this.NR14);
-    console.log("NR13", value)
   }
 
   set NR14(value) {
     this._NR14 = value;
     this.lengthEnabled = isSet(value, 6);
     this.frequency = this.getFrequency(this.NR13, value);
-    if (isSet(value, 7)) {
-      console.log("NR14", value);
+    if (isSet(value, 7) && this.dacEnabled) {
       this.trigger();
     }
   }
