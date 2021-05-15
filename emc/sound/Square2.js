@@ -13,15 +13,15 @@ class Square2 extends Square {
   set NR21(value) {
     this._NR21 = value;
     this.waveDuty = this.getWaveDuty((value >> 6));
-    // this.soundLength = (64 - (value & 0x3F)) * (1 / 256); //seconds
-    this.soundLength = 64 - (value & 0x3F);
+    this.soundDuration = (64 - (value & 0x3F)) * (1 / 256); //seconds
+    this.soundLength = value & 0x3F;
   }
 
   set NR22(value) {
     this._NR22 = value;
     this.envelopeVolume = value >> 4;
     this.increaseVolume = isSet(value, 3);
-    // this.envelopePeriod = (value & 0x07) * (1 / 64); //seconds
+    this.envelopeDuration = (value & 0x07) * (1 / 64); //seconds
     this.envelopePeriod = (value & 0x07);
     if ((value >> 3) == 0) {
       this.dacEnabled = false;
@@ -29,20 +29,23 @@ class Square2 extends Square {
     } else {
       this.dacEnabled = true;
     }
+    this.updateGain();
   }
 
   set NR23(value) {
     this._NR23 = value;
-    this.frequency = this.getFrequency(value, this.NR24);
+    this.frequency = this.getFrequency(value, this._NR24);
+    this.updateFrequency();
   }
 
   set NR24(value) {
     this._NR24 = value;
     this.lengthEnabled = isSet(value, 6);
-    this.frequency = this.getFrequency(this.NR23, value);
     if (isSet(value, 7) && this.dacEnabled) {
       this.trigger();
     }
+    this.frequency = this.getFrequency(this._NR23, value);
+    this.updateFrequency();
   }
 
   clear() {
