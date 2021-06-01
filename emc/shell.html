@@ -36,6 +36,7 @@
     <button id="startTetris">Tetris</button>
     <button id="startDK">Donkey Kong</button>
     <button id="startMK2">Mortal Kombat</button>
+    <input type="file" id="fileInput" />
   </body>
 
   <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.17/Tone.js"></script> -->
@@ -45,6 +46,30 @@
       alert('WebGL context lost. You will need to reload the page.'); 
       e.preventDefault(); 
     })
+
+    var loadCart = function(arr) {
+      memory = new Uint8Array(Module.HEAPU8.buffer, Module._getMemoryPtr(), 0x10000);
+      cartRom = new Uint8Array(Module.HEAPU8.buffer, Module._getCartPtr(), 4194304);
+      let buffer = new Uint8Array(arr);
+      let j = 0;
+      for (let i = 0; i < 16384; ++i, ++j) {
+        memory[j] = buffer[i];
+      }
+      j = 0;
+      for (let i = 0; i < arr.byteLength; ++i, ++j) {
+        cartRom[j] = buffer[i];
+      }
+      audio = new SoundController();
+      Module._startCpu();
+      fn();
+    }
+
+    document.getElementById("fileInput").addEventListener("change", (e) => {
+      e.target.files[0].arrayBuffer().then(arr => {
+        loadCart(arr);
+      })
+    })
+
     var Module = {
       preRun: [],
       postRun: [],

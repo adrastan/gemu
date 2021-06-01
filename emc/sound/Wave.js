@@ -67,7 +67,8 @@ class Wave {
 
   updateFrequency() {
     if (this.source) {
-      this.source.playbackRate.value = 32 * this.frequency / 65536;
+      this.source.playbackRate.value = 32 * this.frequency / 65536 ;
+      //this.source.playbackRate.value = this.frequency / 65536;
     }
   }
 

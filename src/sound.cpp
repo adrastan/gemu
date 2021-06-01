@@ -36,8 +36,15 @@ int * getSoundRegisters()
 }
 
 EMSCRIPTEN_KEEPALIVE
-int * getMemoryPtr() {
+int * getMemoryPtr() 
+{
 	return (int *)&memory[0];
+}
+
+EMSCRIPTEN_KEEPALIVE
+int * getCartPtr()
+{
+	return (int *)&cart_rom[0];
 }
 #endif
 

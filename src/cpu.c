@@ -95,11 +95,11 @@ void start_cpu(char *game)
     } else {
         fp = fopen(file_location, "rb");
     }
-    if (fp == NULL) {
-        printf("game not found\n");
-        return;
+    if (fp != NULL) {
+        read_rom(fp);
     }
-    read_rom(fp);
+    
+    initCart();
     init_regs();
     set_clock_freq();
     switch_mode(2);
@@ -188,6 +188,27 @@ void update_frame()
     update_sound(counter);
 }
 #endif
+
+void initCart()
+{
+    ram_enabled = memory[0x0149];
+    headers.mbc = memory[0x147];
+    for (int i = 0; i < 48; ++i) {
+        headers.logo[i] = memory[0x104 + i];
+    }
+    for (int i = 0; i < 16; ++i) {
+        headers.title[i] = memory[0x134 + i];
+    }
+    headers.cgb = is_set(memory[0x143], 7);
+    headers.sgb = memory[0x146] == 0x03;
+    headers.rom_size = memory[0x148];
+    headers.ram_size = memory[0x149];
+    printf("mbc %d\n", headers.mbc);
+    if (headers.mbc > 3) {
+        printf("mbc %d not supported\n", headers.mbc);
+        exit(1);
+    }
+}
 
 void update_serial(int cycles)
 {
@@ -331,19 +352,12 @@ void read_rom(FILE* fp)
         exit(0);
     }
     int j = 0;
-    for (int i = 0; i < 16384; ++i, ++j) {
+    for (int i = 0; i < 0x10000; ++i, ++j) {
         memory[j] = arr[i];
     }
     j = 0;
     for (int i = 0; i < size; ++i, ++j) {
         cart_rom[j] = arr[i];
-    }
-    ram_enabled = memory[0x0149];
-    if (memory[0x147] == 0x05 || memory[0x147] == 0x06) {
-        MBC2 = 1;
-    } else if (memory[0x147] >= 0x0F && memory[0x147] <= 0x13) {
-        MBC3 = 1;
-
     }
     fclose(fp);
 }

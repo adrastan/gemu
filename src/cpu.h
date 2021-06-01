@@ -80,5 +80,6 @@ void save_state(void);
 void load_state(void);
 u_int8* get_state(void);
 void restart(void);
+void initCart(void);
 
 #endif // CPU_H

@@ -68,11 +68,36 @@ class Square {
     }
 
     if (this.envelopePeriod && this.gain) {
-      if (this.increaseVolume) {
-        this.envelopeIncrease();
+      this.envelope();
+    }
+    if (this.sweepDuration) {
+      this.sweep();
+    }
+  }
+
+  envelope() {
+    if (this.increaseVolume) {
+      this.envelopeIncrease();
+    } else {
+      this.envelopeDecrease();
+    }
+  }
+
+  sweep() {
+    let time = this.ctx.currentTime;
+    let f = this.osc.frequency.value;
+    let elapsed = 0;
+
+    while (elapsed < this.soundDuration) {
+      if (this.sweepIncrease) {
+        f = f + f / Math.pow(2, this.sweepShift);
       } else {
-        this.envelopeDecrease();
+        f = f - f / Math.pow(2, this.sweepShift);
       }
+      elapsed += time + this.sweepDuration;
+      time = time + this.sweepDuration;
+      elapsed += this.sweepDuration;
+      this.osc.frequency.linearRampToValueAtTime(f, time);
     }
   }
 
@@ -114,6 +139,7 @@ class Square {
       return;
     }
     this.gain.gain.cancelScheduledValues(this.ctx.currentTime);
+    this.osc.frequency.cancelScheduledValues(this.ctx.currentTime);
     this.osc.stop();
     this.constantSource.stop();
     this.osc.disconnect();

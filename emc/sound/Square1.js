@@ -13,6 +13,19 @@ class Square1 extends Square {
 
   set NR10(value) {
     this._NR10 = value;
+    this.sweepTime = (value >> 4) && 0x07;
+    this.sweepIncrease = isSet(value, 3);
+    this.sweepShift = value & 0x7;
+    switch (this.sweepTime) {
+      case 0: this.sweepDuration = 0; break;
+      case 1: this.sweepDuration = 0.0078; break;
+      case 2: this.sweepDuration = 0.0156; break;
+      case 3: this.sweepDuration = 0.0234; break;
+      case 4: this.sweepDuration = 0.0313; break;
+      case 5: this.sweepDuration = 0.0391; break;
+      case 6: this.sweepDuration = 0.0469; break;
+      case 7: this.sweepDuration = 0.0547; break;
+    }
   }
 
   set NR11(value) {

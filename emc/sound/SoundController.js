@@ -7,6 +7,22 @@ class SoundController {
     this.cycles = 0;
   }
 
+  set NR50(value) {
+    this._NR50 = value;
+  }
+
+  set NR51(value) {
+    this._NR51 = value;
+  }
+
+  get NR50() {
+    return this._NR50;
+  }
+
+  get NR51() {
+    return this._NR51;
+  }
+
   initChannels() {
     this.channel1 = new Square1(this.ctx);
     this.channel2 = new Square2(this.ctx);
@@ -16,8 +32,7 @@ class SoundController {
   }
 
   endFrame() {
-    // this.channel1.start();
-    // this.channel2.start();
+    this.channel4.endFrame();
   }
 
   restart() {
@@ -32,30 +47,11 @@ class SoundController {
   }
 
   updateCycles(cycles) {
-    // this.cycles += cycles;
-    // this.channel3.updateCycles(cycles);
-    // if (this.cycles >= 8192) {
-    //   this.clockFrame();
-    // }
+    this.channel4.updateCycles(cycles);
   }
 
   clockFrame() {
-    // this.cycles -= 8192;
-    // this.frame++;
 
-    // if (this.frame % 2 == 1) {
-    //   this.channel1.clockLength();
-    //   this.channel2.clockLength();
-    //   this.channel3.clockLength();
-    // }
-    // if (this.frame == 3 || this.frame == 7) {
-    //   this.channel1.clockSweep();
-    // }
-    // if (this.frame == 8) {
-    //   this.channel1.clockEnvelope();
-    //   this.channel2.clockEnvelope();
-    //   this.frame = 0;
-    // }
   }
 
   write(address, byte) {
