@@ -46,6 +46,12 @@ int * getCartPtr()
 {
 	return (int *)&cart_rom[0];
 }
+
+EMSCRIPTEN_KEEPALIVE
+int * getRamPtr()
+{
+	return (int *)&cart_ram[0];
+}
 #endif
 
 }

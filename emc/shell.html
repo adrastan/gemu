@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
+    <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
     <title>Emscripten-Generated Code</title>
     <style>
       canvas {
@@ -14,51 +15,85 @@
 
       body {
         margin: 0;
-        overflow: hidden;
       }
 
       html, body {
         height: 100%;
       }
 
-      #canvas-container {
-        overflow-y: scroll;
+      #container {
         display: flex;
-        align-items: center;
-        justify-content: center;
+        flex-direction: column;
       }
     </style>
   </head>
   <body>
-    <div id="canvas-container">
+    <div id="container">
+      <button id="startTetris">Tetris</button>
+      <button id="startDK">Donkey Kong</button>
+      <button id="startMK2">Mortal Kombat</button>
+      <input type="file" id="fileInput" />
       <canvas id="canvas"></canvas>
+      <div class="buttons">
+        <div class="dpad">
+          <button id="button-up">Up</button>
+          <button id="button-right">Right</button>
+          <button id="button-down">Down</button>
+          <button id="button-left">Left</button>
+        </div>
+        <div class="start-select">
+          <button id="button-start">Start</button>
+          <button id="button-select">Select</button>
+        </div>
+        <div class="actions">
+          <button id="button-a">A</button>
+          <button id="button-b">B</button>
+        </div>
+      </div>
     </div>
-    <button id="startTetris">Tetris</button>
-    <button id="startDK">Donkey Kong</button>
-    <button id="startMK2">Mortal Kombat</button>
-    <input type="file" id="fileInput" />
   </body>
 
   <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.17/Tone.js"></script> -->
 
   <script type='text/javascript'>
+    let db = new Dexie("games");
+    db.version(1).stores({
+      game: 'name'
+    });
+    db.open();
+
     document.getElementById("canvas").addEventListener("webglcontextlost", (e) => {
       alert('WebGL context lost. You will need to reload the page.'); 
       e.preventDefault(); 
     })
 
-    var loadCart = function(arr) {
-      memory = new Uint8Array(Module.HEAPU8.buffer, Module._getMemoryPtr(), 0x10000);
-      cartRom = new Uint8Array(Module.HEAPU8.buffer, Module._getCartPtr(), 4194304);
+    var loadSave = async function() {
+      let title = "";
+      for (let i = 0x134; i <= 0x143; ++i) {
+        title += String.fromCharCode(memory[i]);
+      }
+      window.game = await db.game.get(title);
+      if (!window.game) {
+        await db.game.put({ name: title, ram: new Uint8Array(32768) });
+        window.game = await db.game.get(title);
+      }
+      console.log(title, game);
+      for (let i = 0; i < 32768; ++i) {
+        cartRam[i] = game.ram[i];
+      }
+    }
+
+    var loadCart = async function(arr) {
       let buffer = new Uint8Array(arr);
       let j = 0;
-      for (let i = 0; i < 16384; ++i, ++j) {
+      for (let i = 0; i < 0x10000; ++i, ++j) {
         memory[j] = buffer[i];
       }
       j = 0;
       for (let i = 0; i < arr.byteLength; ++i, ++j) {
         cartRom[j] = buffer[i];
       }
+      await loadSave();
       audio = new SoundController();
       Module._startCpu();
       fn();
@@ -66,7 +101,9 @@
 
     document.getElementById("fileInput").addEventListener("change", (e) => {
       e.target.files[0].arrayBuffer().then(arr => {
-        loadCart(arr);
+        return loadCart(arr);
+      }).catch(e => {
+        console.error(e);
       })
     })
 
@@ -82,8 +119,7 @@
       },
       canvas: document.createElement("canvas")
     };
-  </script>
-  <script>
+
     let setBit = function(byte, n) {
       byte |= 1 << n;
       return byte;
@@ -111,6 +147,7 @@
   {{{ SCRIPT }}}
 
   <script>
+
     let getImageData = function() {
       Module._getNextFrame();
       let buffer = new Uint8ClampedArray(Module.HEAPU8.buffer, Module._getScreenSurfacePtr(), 69120);
@@ -127,14 +164,24 @@
       return new ImageData(view, 160);
     }
 
+    const CANVAS_WIDTH = 160;
+    const CANVAS_HEIGHT = 144;
+
     let mainCanvas = document.getElementById("canvas");
-    mainCanvas.width = 160 * 3;
-    mainCanvas.height = 144 * 3;
+    mainCanvas.width = CANVAS_WIDTH;
+    mainCanvas.height = CANVAS_HEIGHT;
     let smallCanvas = document.createElement("canvas");
     smallCanvas.width = 160;
     smallCanvas.height = 144;
     let mainCtx = mainCanvas.getContext("2d");
     let smallCtx = smallCanvas.getContext("2d");
+
+    let ram_changed = function(address, byte) {
+      if (window.game) {
+        window.game.ram[address] = byte;
+        db.game.put(window.game);
+      }
+    }
 
     let write_memory = function(address, byte) {
       if (address >= 0xff10 && address <= 0xff3f) {
@@ -149,7 +196,7 @@
     let draw = function() {
       smallCtx.putImageData(getImageData(), 0, 0);
       mainCtx.imageSmoothingEnabled = false;
-      mainCtx.drawImage(smallCanvas, 0, 0, 160, 144, 0, 0, 160 * 3, 144 * 3);
+      mainCtx.drawImage(smallCanvas, 0, 0, 160, 144, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
       audio.endFrame();
       window.nextFrame = requestAnimationFrame(draw);
     }
@@ -157,14 +204,17 @@
     let memory;
     
     let fn = function() {
-      memory = new Uint8Array(Module.HEAPU8.buffer, Module._getMemoryPtr(), 0x10000);
       running = true;
       window.nextFrame = requestAnimationFrame(draw);
     }
 
-    // Module.onRuntimeInitialized = fn;
+    Module.onRuntimeInitialized = function() {
+      memory = new Uint8Array(Module.HEAPU8.buffer, Module._getMemoryPtr(), 0x10000);
+      cartRom = new Uint8Array(Module.HEAPU8.buffer, Module._getCartPtr(), 4194304);
+      cartRam = new Uint8Array(Module.HEAPU8.buffer, Module._getRamPtr(), 32768);
+    };
 
-    document.getElementById("startTetris").addEventListener("click", () => {
+    document.getElementById("startTetris").addEventListener("click", async () => {
       window.cancelAnimationFrame(window.nextFrame);
       if (typeof audio === "undefined") {
         audio = new SoundController();
@@ -172,10 +222,11 @@
         audio.restart();
       }
       Module._startTetris();
+      await loadSave();
       fn();
     })
 
-    document.getElementById("startMK2").addEventListener("click", () => {
+    document.getElementById("startMK2").addEventListener("click", async () => {
       window.cancelAnimationFrame(window.nextFrame);
       if (typeof audio === "undefined") {
         audio = new SoundController();
@@ -183,10 +234,11 @@
         audio.restart();
       }
       Module._startMK2();
+      await loadSave();
       fn();
     })
 
-    document.getElementById("startDK").addEventListener("click", () => {
+    document.getElementById("startDK").addEventListener("click", async () => {
       window.cancelAnimationFrame(window.nextFrame);
       if (typeof audio === "undefined") {
         audio = new SoundController();
@@ -194,8 +246,18 @@
         audio.restart();
       }
       Module._startDK();
+      await loadSave();
       fn();
     })
+
+    var isTouchEventWithElement = function(e, element) {
+      const item = e.changedTouches.item(0);
+      if (element === null || item === null) return false;
+      return element.getBoundingClientRect().right > item.clientX &&
+          element.getBoundingClientRect().left < item.clientX &&
+          element.getBoundingClientRect().top < item.clientY &&
+          element.getBoundingClientRect().bottom > item.clientY;
+    }
 
     document.addEventListener("keydown", function(e) {
       if (e.keyCode === 13) { //START

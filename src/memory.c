@@ -16,6 +16,9 @@
  *
  */
 
+#ifdef EMSCRIPTEN
+#include <emscripten.h>
+#endif
 #include "memory.h"
 
 u_int8 memory[MEM_SIZE] = {0}; // 16-bit memory
@@ -33,6 +36,23 @@ u_int8 rtc_m;
 u_int8 rtc_h;
 u_int8 rtc_dl;
 u_int8 rtc_dh;
+
+#ifdef EMSCRIPTEN
+EM_JS(void, call_ram_changed, (int address, int byte), {
+	ram_changed(address, byte);
+});
+
+void ram_changed(u_int16 address, u_int8 byte)
+{
+    call_ram_changed(address, byte);
+}
+#endif
+#ifndef EMSCRIPTEN
+void ram_changed(u_int16 address, u_int8 byte)
+{
+    
+}
+#endif
 
 // returns real-time clock
 u_int8 get_rtc()

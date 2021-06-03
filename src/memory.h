@@ -58,7 +58,7 @@ static inline void do_sound(u_int16,u_int8);
 void init_sound_regs(void);
 void clear_sound_regs(void);
 void init_wave_ram(void);
-
+void ram_changed(u_int16, u_int8);
 
 static inline u_int8 mbc1_read(u_int16 address)
 {
@@ -120,19 +120,45 @@ static inline void mbc1_write(u_int16 address, u_int8 byte)
             return;
         }
         cart_ram[(address - 0xA000) + (ram_bank * 8192)] = byte;
+        ram_changed((address - 0xA000) + (ram_bank * 8192), byte);
     } else {
         memory[address] = byte;
     }
+    
 }
 
 static inline u_int8 mbc2_read(u_int16 address)
 {
-
+    if (address >= 0 && address <= 0x3FFF) {
+        return memory[address];
+    } else if (address >= 0x4000 && address <= 0x7FFF) {
+        return cart_rom[(address - 0x4000) + (bank * 0x4000)];
+    } else if (address >= 0xA000 && address <= 0xA1FF) {
+        return cart_ram[address - 0xA000];
+    } else if (address >= 0xA200 && address <= 0xBFFF) {
+        address &= 0x01FF;
+        return cart_ram[address - 0xA000];
+    } else {
+        return memory[address];
+    }
 }
 
 static inline void mbc2_write(u_int16 address, u_int8 byte)
 {
-
+    if (address >= 0 && address <= 0x1FFF) {
+        if (!is_set(address, 8)) {
+            ram_enabled = byte == 0x0A;
+        }
+    } else if (address >= 0x2000 && address <= 0x3FFF) {
+        bank = byte & 0x0F;
+        if (!bank) {
+            bank = 1;
+        }
+    } else if (address >= 0xA000 && address <= 0xA1FF) {
+        cart_ram[address - 0xA000] = byte;
+    } else {
+        memory[address] = byte;
+    }
 }
 
 static inline u_int8 read_memory(u_int16 address)
@@ -225,6 +251,8 @@ static inline u_int8 read_memory(u_int16 address)
         return mbc1_read(address);
     } else if (headers.mbc == 5 || headers.mbc == 6) {
         return mbc2_read(address);
+    } else {
+        return 0xFF;
     }
 }
 
@@ -232,16 +260,6 @@ static inline void write_memory(u_int16 address, u_int8 byte)
 {
     if (address >= 0xFF10 && address <= 0xFF3F) {
         do_sound(address, byte);
-        return;
-    }
-    // ram area
-    if (address >= 0xA000 && address <= 0xBFFF) {
-        if (!ram_enabled) return;
-        if (ram_bank <= 3) {
-            cart_ram[(address - 0xA000) + (ram_bank * 8192)] = byte;
-        } else {
-            write_rtc(ram_bank, byte);
-        }
         return;
     }
     // DMA transfer
