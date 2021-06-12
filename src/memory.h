@@ -156,6 +156,7 @@ static inline void mbc2_write(u_int16 address, u_int8 byte)
         }
     } else if (address >= 0xA000 && address <= 0xA1FF) {
         cart_ram[address - 0xA000] = byte;
+        ram_changed(address - 0xA000, byte);
     } else {
         memory[address] = byte;
     }
