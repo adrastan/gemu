@@ -1,3 +1,4 @@
+var BUF_SIZE = 4000
 
 class SoundController {
   constructor() {
@@ -6,8 +7,7 @@ class SoundController {
     this.frame = 0;
     this.cycles = 0;
     this.frameCount = 0;
-    this.sampleTimer = 87;
-    this.buffer = [];
+    this.sampleTimer = Math.round(4194304 / this.ctx.sampleRate);
   }
 
   set NR50(value) {
@@ -53,30 +53,17 @@ class SoundController {
       this.cycles -= 8192;
     }
     this.channel1.updateCycles(cycles);
+    this.channel2.updateCycles(cycles);
     this.sampleTimer -= cycles;
     if (this.sampleTimer <= 0) {
-      this.sampleTimer += 87;
+      this.sampleTimer += Math.round(4194304 / this.ctx.sampleRate);
       this.readSamples();
     }
   }
 
   readSamples() {
-    this.buffer.push(this.channel1.getAmplitude());
-    // if (this.buffer.length === 48000) {
-    //   this.play();
-    //   this.buffer = [];
-    // }
-  }
-
-  play() {
-    this.source = this.ctx.createBufferSource();
-    let buffer = this.ctx.createBuffer(1, this.buffer.length, this.ctx.sampleRate);
-    buffer.copyToChannel(new Float32Array(this.buffer), 0, 0);
-    this.source.buffer = buffer;
-    this.source.connect(this.ctx.destination);
-    this.start = this.start || this.ctx.currentTime;
-    this.source.start(this.start);
-    this.start += this.source.buffer.duration;
+    this.channel1.readSample();
+    this.channel2.readSample();
   }
 
   endFrame() {
@@ -85,25 +72,25 @@ class SoundController {
       this.frameCount = 0;
     }
     this.channel1.endFrame();
-    if (this.buffer.length) {
-      this.play();
-      this.buffer = [];
-    }
+    this.channel2.endFrame();
   }
 
   clockFrame() {
     this.frame++;
     if (this.frame % 2 === 1) {
       this.channel1.clockLength();
+      this.channel2.clockLength();
     }
     if (this.frame === 3 || this.frame === 7) {
       this.channel1.clockSweep();
     }
     if (this.frame === 8) {
       this.channel1.clockEnvelope();
+      this.channel2.clockEnvelope();
       this.frame = 0;
     }
     this.channel1.frame = this.frame;
+    this.channel2.frame = this.frame;
   }
 
   write(address, byte) {

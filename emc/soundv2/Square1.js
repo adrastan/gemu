@@ -13,7 +13,7 @@ class Square1 extends Square {
 
   set NR10(value) {
     this._NR10 = value;
-    this.sweepTime = (value >> 4) && 0x07;
+    this.sweepTime = (value >> 4) & 0x07;
     this.sweepIncrease = isSet(value, 3);
     this.sweepShift = value & 0x7;
     switch (this.sweepTime) {
@@ -43,7 +43,6 @@ class Square1 extends Square {
     this.envelopePeriod = (value & 0x07);
     if ((value >> 3) == 0) {
       this.dacEnabled = false;
-      this.stop();
     } else {
       this.dacEnabled = true;
     }
@@ -62,10 +61,6 @@ class Square1 extends Square {
     if (isSet(value, 7) && this.dacEnabled) {
       this.trigger();
     }
-  }
-
-  clockSweep() {
-
   }
 
   clear() {
