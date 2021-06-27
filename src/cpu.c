@@ -352,7 +352,7 @@ void read_rom(FILE* fp)
         exit(0);
     }
     int j = 0;
-    for (int i = 0; i < 0x10000; ++i, ++j) {
+    for (int i = 0; i < 32768; ++i, ++j) {
         memory[j] = arr[i];
     }
     j = 0;

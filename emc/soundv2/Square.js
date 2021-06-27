@@ -1,6 +1,6 @@
-class Square {
+class Square extends Channel {
   constructor(ctx) {
-    this.ctx = ctx;
+    super(ctx);
     this.dutyTable = {
       0: [0,0,0,0,0,0,0,1],
       1: [1,0,0,0,0,0,0,1],
@@ -10,27 +10,6 @@ class Square {
     this.currentDuty = 0;
     this.volume = 0;
     this.enabled = false;
-    this.buffer = [];
-    this.sources = [];
-  }
-
-  play() {
-    this.start = this.start || this.ctx.currentTime;
-    while (this.sources.length) {
-      let source = this.sources.shift();
-      source.start(this.start);
-      this.start += source.buffer.duration / source.playbackRate.value;
-    }
-  }
-
-  createBuffer() {
-    let source = this.ctx.createBufferSource();
-    let buffer = this.ctx.createBuffer(1, this.buffer.length, this.ctx.sampleRate);
-    buffer.copyToChannel(new Float32Array(this.buffer), 0, 0);
-    source.buffer = buffer;
-    source.playbackRate.value = 1;
-    source.connect(this.ctx.destination);
-    this.sources.push(source);
   }
 
   updateCycles(cycles) {
@@ -38,12 +17,6 @@ class Square {
     if (this.dutyTimer <= 0) {
       this.advanceDuty();
       this.dutyTimer += (2048 - this.frequency) * 4;
-    }
-  }
-
-  endFrame() {
-    if (this.sources && this.sources.length) {
-      this.play();
     }
   }
 
@@ -72,9 +45,9 @@ class Square {
   }
 
   clockLength() {
-    if (this.lengthEnabled && this.soundLength) {
-      this.soundLength--;
-      if (this.soundLength === 0) {
+    if (this.lengthEnabled && this.soundLengthTimer) {
+      this.soundLengthTimer--;
+      if (this.soundLengthTimer === 0) {
         this.enabled = false;
       }
     }
@@ -103,8 +76,13 @@ class Square {
     this.enabled = true;
     this.dutyEnabled = true; // disable duty advance until first trigger
     this.dutyTimer = (2048 - this.frequency) * 4;
-    if (!this.soundLength) {
-      this.soundLength = 64;
+    this.soundLengthTimer = 64 - this.soundLength;
+    if (!this.soundLengthTimer) {
+      if (this.frame % 2 === 1 && this.lengthEnabled) {
+        this.soundLengthTimer = 63;
+      } else {
+        this.soundLengthTimer = 64;
+      }
     }
     this.envelopeTimer = this.envelopePeriod || 8;
     if (this.frame === 7) {

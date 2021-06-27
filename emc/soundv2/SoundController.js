@@ -1,4 +1,6 @@
-var BUF_SIZE = 4000
+var BUF_SIZE = 4000;
+var SAMPLE_RATE = Math.round(4194304 / 48000);
+var SOURCE_SAMPLE_RATE = 1;
 
 class SoundController {
   constructor() {
@@ -7,7 +9,7 @@ class SoundController {
     this.frame = 0;
     this.cycles = 0;
     this.frameCount = 0;
-    this.sampleTimer = Math.round(4194304 / this.ctx.sampleRate);
+    this.sampleTimer = SAMPLE_RATE;
   }
 
   set NR50(value) {
@@ -54,9 +56,11 @@ class SoundController {
     }
     this.channel1.updateCycles(cycles);
     this.channel2.updateCycles(cycles);
+    this.channel3.updateCycles(cycles);
+    this.channel4.updateCycles(cycles);
     this.sampleTimer -= cycles;
     if (this.sampleTimer <= 0) {
-      this.sampleTimer += Math.round(4194304 / this.ctx.sampleRate);
+      this.sampleTimer += SAMPLE_RATE;
       this.readSamples();
     }
   }
@@ -64,15 +68,28 @@ class SoundController {
   readSamples() {
     this.channel1.readSample();
     this.channel2.readSample();
+    this.channel3.readSample();
+    this.channel4.readSample();
+  }
+
+  play() {
+    this.channel1.play();
+    this.channel2.play();
+    this.channel3.play();
+    this.channel4.play();
+    this.started = true;
   }
 
   endFrame() {
+    if (!this.startFrameTime) {
+      this.startFrameTime = performance.now();
+    }
     this.frameCount++;
     if (this.frameCount == 60) {
       this.frameCount = 0;
+      this.startFrameTime = null;
     }
-    this.channel1.endFrame();
-    this.channel2.endFrame();
+    this.play();
   }
 
   clockFrame() {
@@ -80,6 +97,8 @@ class SoundController {
     if (this.frame % 2 === 1) {
       this.channel1.clockLength();
       this.channel2.clockLength();
+      this.channel3.clockLength();
+      this.channel4.clockLength();
     }
     if (this.frame === 3 || this.frame === 7) {
       this.channel1.clockSweep();
@@ -87,15 +106,18 @@ class SoundController {
     if (this.frame === 8) {
       this.channel1.clockEnvelope();
       this.channel2.clockEnvelope();
+      this.channel4.clockEnvelope();
       this.frame = 0;
     }
     this.channel1.frame = this.frame;
     this.channel2.frame = this.frame;
+    this.channel3.frame = this.frame;
+    this.channel4.frame = this.frame;
   }
 
   write(address, byte) {
     if (address >= 0xff30 && address <= 0xff3f) {
-      this.channel3.waveRam[address - 0xff30] = byte;
+      this.channel3.setWaveRam(address - 0xff30, byte);
       return;
     }
 
@@ -139,6 +161,8 @@ class SoundController {
 
   powerOn() {
     this.NR52 = 0xF0;
+    this.frame = 0;
+    this.cycles = 0;
   }
 
   powerOff() {

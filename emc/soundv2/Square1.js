@@ -3,6 +3,9 @@ class Square1 extends Square {
   constructor(ctx) {
     super(ctx);
     this.channelName = "channel1";
+    let span = document.createElement("div");
+    span.id = this.channelName;
+    document.getElementById("fps").appendChild(span);
   }
 
   get NR10() { return this._NR10; };
