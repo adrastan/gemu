@@ -14,10 +14,55 @@ class SoundController {
 
   set NR50(value) {
     this._NR50 = value;
+    this.SO2 = (value >> 4) & 7;
+    this.SO1 = (value & 7);
+    for (let channel of this.channels) {
+      channel.leftGain.gain.value = this.SO2 / 14;
+      channel.rightGain.gain.value  = this.SO1 / 14;
+    }
   }
 
   set NR51(value) {
     this._NR51 = value;
+    if (isSet(value, 7) && isSet(value, 3)) {
+      this.channel4.panner.pan.value = 0;
+    } else if (isSet(value, 7) && !isSet(value, 3)) {
+      this.channel4.panner.pan.value = -1;
+    } else if (!isSet(value, 7) && isSet(value, 3)) {
+      this.channel4.panner.pan.value = 1;
+    } else if (!isSet(value, 7) && !isSet(value, 3)) {
+      this.channel4.enabled = false;
+    }
+
+    if (isSet(value, 6) && isSet(value, 2)) {
+      this.channel3.panner.pan.value = 0;
+    } else if (isSet(value, 6) && !isSet(value, 2)) {
+      this.channel3.panner.pan.value = -1;
+    } else if (!isSet(value, 6) && isSet(value, 2)) {
+      this.channel3.panner.pan.value = 1;
+    } else if (!isSet(value, 6) && !isSet(value, 2)) {
+      this.channel3.enabled = false;
+    }
+
+    if (isSet(value, 5) && isSet(value, 1)) {
+      this.channel2.panner.pan.value = 0;
+    } else if (isSet(value, 5) && !isSet(value, 1)) {
+      this.channel2.panner.pan.value = -1;
+    } else if (!isSet(value, 5) && isSet(value, 1)) {
+      this.channel2.panner.pan.value = 1;
+    } else if (!isSet(value, 5) && !isSet(value, 1)) {
+      this.channel2.enabled = false;
+    }
+
+    if (isSet(value, 4) && isSet(value, 0)) {
+      this.channel1.panner.pan.value = 0;
+    } else if (isSet(value, 4) && !isSet(value, 0)) {
+      this.channel1.panner.pan.value = -1;
+    } else if (!isSet(value, 4) && isSet(value, 0)) {
+      this.channel1.panner.pan.value = 1;
+    } else if (!isSet(value, 4) && !isSet(value, 0)) {
+      this.channel1.enabled = false;
+    }
   }
 
   get NR50() {
@@ -29,10 +74,15 @@ class SoundController {
   }
 
   initChannels() {
+    this.channels = [];
     this.channel1 = new Square1(this.ctx);
     this.channel2 = new Square2(this.ctx);
     this.channel3 = new Wave(this.ctx);
     this.channel4 = new Noise(this.ctx);
+    this.channels.push(this.channel1);
+    this.channels.push(this.channel2);
+    this.channels.push(this.channel3);
+    this.channels.push(this.channel4);
     // this.channel1.start();
   }
 
@@ -175,6 +225,15 @@ class SoundController {
 
   enabled() { 
     return isSet(this.NR52, 7);
+  }
+
+  stop() {
+    for (let channel of this.channels) {
+      for (let playing of channel.currentlyPlaying) {
+        playing.stop();
+      }
+      channel.currentlyPlaying = [];
+    }
   }
 
   clearRegs() {

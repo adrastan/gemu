@@ -5,56 +5,24 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1">
     <script src="https://unpkg.com/dexie@latest/dist/dexie.js"></script>
-    <title>Emscripten-Generated Code</title>
-    <style>
-      canvas {
-        border: none;
-        margin: none;
-        padding: none;
-      }
+    <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap/dist/css/bootstrap.min.css" />
+    <link type="text/css" rel="stylesheet" href="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.css" />
 
-      body {
-        margin: 0;
-      }
+    <!-- Load Vue followed by BootstrapVue -->
+    <script src="//unpkg.com/vue@latest/dist/vue.min.js"></script>
+    <script src="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue.min.js"></script>
 
-      html, body {
-        height: 100%;
-      }
-
-      #container {
-        display: flex;
-        flex-direction: column;
-      }
-    </style>
+    <!-- Load the following for BootstrapVueIcons support -->
+    <script src="//unpkg.com/bootstrap-vue@latest/dist/bootstrap-vue-icons.min.js"></script>
+    <title>Gemu Gameboy Emulator</title>
+    <link rel="stylesheet" href="./style.css"></link>
   </head>
   <body>
-    <div id="container">
-      <div id="fps"></div>
-      <button id="startTetris">Tetris</button>
-      <button id="startDK">Donkey Kong</button>
-      <button id="startMK2">Mortal Kombat</button>
-      <input type="file" id="fileInput" />
-      <canvas id="canvas"></canvas>
-      <div class="buttons">
-        <div class="dpad">
-          <button id="button-up">Up</button>
-          <button id="button-right">Right</button>
-          <button id="button-down">Down</button>
-          <button id="button-left">Left</button>
-        </div>
-        <div class="start-select">
-          <button id="button-start">Start</button>
-          <button id="button-select">Select</button>
-        </div>
-        <div class="actions">
-          <button id="button-a">A</button>
-          <button id="button-b">B</button>
-        </div>
-      </div>
+    <div id="app">
+      <gb-root v-if="loaded"></gb-root>
+      <gb-loading v-else></gb-loading>
     </div>
   </body>
-
-  <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.17/Tone.js"></script> -->
 
   <script src="soundv2/Channel.js"></script>
   <script src="soundv2/Square.js"></script>
@@ -67,4 +35,5 @@
   {{{ SCRIPT }}}
 
   <script src="main.js"></script>
+  <script src="app.js" type="module"></script>
 </html>

@@ -5,9 +5,6 @@ class Wave extends Channel {
     this.waveTable = new Array(32);
     this.waveRamPosition = 0;
     this.channelName = "wave";
-    let span = document.createElement("div");
-    span.id = this.channelName;
-    document.getElementById("fps").appendChild(span);
   }
   
   get NR30() { return this._NR30 }

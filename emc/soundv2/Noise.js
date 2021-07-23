@@ -3,9 +3,6 @@ class Noise extends Channel {
     super(ctx);
     this.cycles = 0;
     this.channelName = "noise";
-    let span = document.createElement("div");
-    span.id = this.channelName;
-    document.getElementById("fps").appendChild(span);
   }
 
   get NR41() { return this._NR41 }
@@ -86,7 +83,7 @@ class Noise extends Channel {
   }
 
   readSample() {
-    if (!this.dacEnabled || !this.enabled) {
+    if (!this.dacEnabled || !this.enabled || typeof this.sample === "undefined") {
       this.buffer.push(0);
     } else {
       let amp = this.sample * (this.volume / 15);

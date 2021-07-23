@@ -53,10 +53,6 @@ class Square extends Channel {
     }
   }
 
-  clockSweep() {
-
-  }
-
   clockEnvelope() {
     if (this.envelopePeriod && this.envelopeTimer > 0) {
       this.envelopeTimer--;

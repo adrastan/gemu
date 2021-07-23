@@ -113,7 +113,6 @@ void init_sound()
 
 void sync_sound(u_int16 address, u_int8 byte)
 {
-	if (address == 0xff19 || address == 0xff14 || address == 0xff23) return;
 	update_apu(address, byte);
 	apu.write_register( address, byte);
 }

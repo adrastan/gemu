@@ -41,8 +41,10 @@ typedef struct {
 extern u_int8 memory[];
 extern u_int8 bank;
 extern u_int8 ram_bank;
+extern u_int8 rtc_select;
 extern u_int8 cart_rom[];
 extern u_int8 cart_ram[];
+extern u_int8 rtc_reg[];
 extern int ram_enabled;
 extern cart_headers headers;
 extern int bank_mode;
@@ -162,6 +164,70 @@ static inline void mbc2_write(u_int16 address, u_int8 byte)
     }
 }
 
+static inline u_int8 mbc3_read(u_int16 address)
+{
+    if (address >= 0 && address <= 0x3FFF) {
+        return memory[address];
+    }
+    if (address >= 0x4000 && address <= 0x7FFF) {
+        return cart_rom[(address - 0x4000) + (bank * 0x4000)];
+    }
+    if (address >= 0xA000 && address <= 0xBFFF) {
+        if (!ram_enabled) {
+            return 0xFF;
+        }
+        if (rtc_select) {
+            return rtc_reg[ram_bank];
+        } else {
+            return cart_ram[(address - 0xA000) + (ram_bank * 8192)];
+        }
+    }
+    return memory[address];
+}
+
+static inline void mbc3_write(u_int16 address, u_int8 byte)
+{
+    if (address >= 0 && address <= 0x1FFF) {
+        if ((byte & 0x0A) == 0x0A) {
+            ram_enabled = 1;
+        } else {
+            ram_enabled = 0;
+        }
+    }
+    else if (address >= 0x2000 && address <= 0x3FFF) {
+        if (!byte) {
+            byte = 1;
+        }
+        bank = byte & 0x7F;
+    }
+    else if (address >= 0x4000 && address <= 0x5FFF) {
+        if (byte >= 0 && byte <= 0x3) {
+            ram_bank = 3 & byte;
+            rtc_select = 0;
+        } else if (byte >= 0x08 && byte <= 0x0C) {
+            rtc_select = 1;
+            ram_bank = byte >> 3;
+        }
+    }
+    else if (address >= 0xA000 && address <= 0xBFFF) {
+        if (!ram_enabled) {
+            return;
+        }
+        if (rtc_select) {
+            rtc_reg[ram_bank] = byte;
+        } else {
+            cart_ram[(address - 0xA000) + (ram_bank * 8192)] = byte;
+            ram_changed((address - 0xA000) + (ram_bank * 8192), byte);
+        }
+    }
+    else if (address >= 0x6000 && address <= 0x7FFF) {
+        
+    } 
+    else {
+        memory[address] = byte;
+    }
+}
+
 static inline u_int8 read_memory(u_int16 address)
 {
     if (address == 0xff00) {
@@ -252,6 +318,8 @@ static inline u_int8 read_memory(u_int16 address)
         return mbc1_read(address);
     } else if (headers.mbc == 5 || headers.mbc == 6) {
         return mbc2_read(address);
+    } else if (headers.mbc >= 0x0f && headers.mbc <= 0x13) {
+        return mbc3_read(address);
     } else {
         return 0xFF;
     }
@@ -313,6 +381,8 @@ static inline void write_memory(u_int16 address, u_int8 byte)
         mbc1_write(address, byte);
     } else if (headers.mbc == 5 || headers.mbc == 6) {
         mbc2_write(address, byte);
+    } else if (headers.mbc >= 0x0f && headers.mbc <= 0x13) {
+        mbc3_write(address, byte);
     }
 }
 

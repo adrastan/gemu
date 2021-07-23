@@ -3,9 +3,6 @@ class Square1 extends Square {
   constructor(ctx) {
     super(ctx);
     this.channelName = "channel1";
-    let span = document.createElement("div");
-    span.id = this.channelName;
-    document.getElementById("fps").appendChild(span);
   }
 
   get NR10() { return this._NR10; };
@@ -16,25 +13,14 @@ class Square1 extends Square {
 
   set NR10(value) {
     this._NR10 = value;
-    this.sweepTime = (value >> 4) & 0x07;
+    this.sweepPeriod = (value >> 4) & 0x07;
     this.sweepIncrease = isSet(value, 3);
     this.sweepShift = value & 0x7;
-    switch (this.sweepTime) {
-      case 0: this.sweepDuration = 0; break;
-      case 1: this.sweepDuration = 0.0078; break;
-      case 2: this.sweepDuration = 0.0156; break;
-      case 3: this.sweepDuration = 0.0234; break;
-      case 4: this.sweepDuration = 0.0313; break;
-      case 5: this.sweepDuration = 0.0391; break;
-      case 6: this.sweepDuration = 0.0469; break;
-      case 7: this.sweepDuration = 0.0547; break;
-    }
   }
 
   set NR11(value) {
     this._NR11 = value;
     this.waveDuty = value >> 6;
-    this.soundDuration = (64 - (value & 0x3F)) * (1 / 256); //seconds
     this.soundLength = (value & 0x3F);
   }
 
@@ -42,7 +28,6 @@ class Square1 extends Square {
     this._NR12 = value;
     this.envelopeVolume = value >> 4;
     this.increaseVolume = isSet(value, 3);
-    this.envelopeDuration = (value & 0x07) * (1 / 64); //seconds
     this.envelopePeriod = (value & 0x07);
     if ((value >> 3) == 0) {
       this.dacEnabled = false;
@@ -54,15 +39,44 @@ class Square1 extends Square {
   set NR13(value) {
     this._NR13 = value;
     this.frequency = ((this.frequency || 0) & ~0xFF) + value;
+    this.soundLengthTimer = 64 - this.soundLength;
   }
 
   set NR14(value) {
     this._NR14 = value;
     this.lengthEnabled = isSet(value, 6);
     this.frequency = (value & 7) * 0x100 + ((this.frequency || 0) & 0xFF);
-
+    
     if (isSet(value, 7) && this.dacEnabled) {
       this.trigger();
+      this.sweepFreq = this.frequency;
+      if (this.sweepPeriod && this.sweepShift) {
+        this.sweepDelay = 1;
+        this.clockSweep();
+      }
+    }
+  }
+
+  clockSweep() {
+    if (this.sweepPeriod && this.sweepDelay && !--this.sweepDelay ) {
+      this.sweepDelay = this.sweepPeriod;
+      this.frequency = this.sweepFreq;
+      
+      this.dutyTimer = (2048 - this.frequency) * 4;
+      
+      let offset = this.sweepFreq >> this.sweepShift;
+      if (this.sweepIncrease) {
+        offset = -offset;
+      }
+      this.sweepFreq += offset;
+      
+      if (this.sweepFreq < 0) {
+        this.sweepFreq = 0;
+      } else if (this.sweepFreq >= 2048 ) {
+        this.sweepDelay = 0;
+        this.enabled = false;
+        this.sweepFreq = 2048; // stop sound output
+      }
     }
   }
 

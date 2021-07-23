@@ -204,7 +204,7 @@ void initCart()
     headers.rom_size = memory[0x148];
     headers.ram_size = memory[0x149];
     printf("mbc %d\n", headers.mbc);
-    if (headers.mbc > 6) {
+    if ((headers.mbc >= 0x08 && headers.mbc <= 0x0d) || headers.mbc > 0x13) {
         printf("mbc %d not supported\n", headers.mbc);
         exit(1);
     }
