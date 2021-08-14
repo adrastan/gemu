@@ -36,7 +36,6 @@ SDL_Event event;
 char * title = NULL; // title of the rom without extension
 char * file_location = NULL; // absolute file location
 char * save_file = NULL; // title with .SAVE extension
-int debug;
 int save_request;
 int load_request;
 int transfer_time;
@@ -44,8 +43,11 @@ int transfer;
 int count;
 int delay;
 int halt;
+int stopped = 0;
 int ime = 1; // interrupt master enable
 int counter;
+int paused = 0;
+int next = 0;
 u_int8 opcode;
 int op_cycles[256] = {4,12,8,8,4,4,8,4,20,8,8,8,4,4,8,4,
                      4,12,8,8,4,4,8,4,12,8,8,8,4,4,8,4,
@@ -98,14 +100,11 @@ void start_cpu(char *game)
     if (fp != NULL) {
         read_rom(fp);
     }
-    
-    initCart();
+
     init_regs();
+    initCart();
     set_clock_freq();
     switch_mode(2);
-    char c;
-    char p[] = "0";
-    int n = (int)strtol(p,NULL,16);
     program_running = 1;
     cap = 1;
     // start_main_loop();
@@ -130,7 +129,7 @@ void get_next_frame() {
             SDL_Delay((1000.0 / FRAMES_PER_SECOND) - (end_time - start_time));
         }
     }
-    update_sound(counter);
+    update_sound(0);
     fps_count -= 70224;
 }
 
@@ -144,20 +143,37 @@ void update_frame(SDL_Event *event)
         }
     }
 
-    check_interrupts();
+    if (paused) {
+        if (next) {
+            next = 0;
+        } else {
+            return;
+        }
+    }
+
     counter = delay;
     delay = 0;
     if (!halt) {
+
         opcode = read_memory(pc.PC++);
+        if (debug && paused) {
+            printf("OPCODE: %x\n", opcode);
+            fflush(stdout);
+        }
         counter += op_cycles[opcode];
         process_opcode();
     } else {
         counter += 4;
     }
+    if (double_speed) {
+        counter /= 2;
+    }
     fps_count += counter;
     update_lcd(counter);
     update_timers(counter);
     update_serial(counter);
+
+    check_interrupts();
 }
 #endif // ifndef EMSCRIPTEN
 
@@ -171,28 +187,45 @@ void get_next_frame() {
 
 void update_frame()
 {
-    check_interrupts();
     counter = delay;
     delay = 0;
     if (!halt) {
         opcode = read_memory(pc.PC++);
         counter += op_cycles[opcode];
-        process_opcode();
+        if (process_opcode() == -1) {
+            // printf("invalid opcode %x, %x, %d\n", opcode, pc.PC, bank);
+        }
     } else {
         counter += 4;
+    }
+    if (double_speed) {
+        counter /= 2;
     }
     fps_count += counter;
     update_lcd(counter);
     update_timers(counter);
     update_serial(counter);
     update_sound(counter);
+
+    check_interrupts();
 }
 #endif
 
 void initCart()
 {
     ram_enabled = memory[0x0149];
-    headers.mbc = memory[0x147];
+    if (memory[0x147] >= 1 && memory[0x147] <= 3) {
+        headers.mbc = 1;
+    }
+    else if (memory[0x147] == 5 || memory[0x147] == 6) {
+        headers.mbc = 2;
+    }
+    else if (memory[0x147] >= 0x0f && memory[0x147] <= 0x13) {
+        headers.mbc = 3;
+    }
+    else if (memory[0x147] >= 0x19 && memory[0x147] <= 0x1e) {
+        headers.mbc = 5;
+    }
     for (int i = 0; i < 48; ++i) {
         headers.logo[i] = memory[0x104 + i];
     }
@@ -204,9 +237,31 @@ void initCart()
     headers.rom_size = memory[0x148];
     headers.ram_size = memory[0x149];
     printf("mbc %d\n", headers.mbc);
-    if ((headers.mbc >= 0x08 && headers.mbc <= 0x0d) || headers.mbc > 0x13) {
-        printf("mbc %d not supported\n", headers.mbc);
+    printf("cgb %d\n", headers.cgb);
+    printf("rom size %d\n", headers.rom_size);
+    printf("ram size %d\n", headers.ram_size);
+    if ((memory[0x147] >= 0x08 && memory[0x147] <= 0x0d) || memory[0x147] > 0x1e) {
+        printf("mbc %d not supported\n", memory[0x147]);
         exit(1);
+    }
+    bg_palette.index = 0;
+    bg_palette.auto_inc = 0;
+    spr_palette.index = 0;
+    spr_palette.auto_inc = 0;
+    for (int i = 0; i < 64; ++i) {
+        bg_palette.palette[i] = 0xff;
+        spr_palette.palette[i] = 0xff;
+    }
+    if (headers.cgb) {
+        memory[0xff4c] = memory[0x143];
+        regs.word.AF = 0x11B0;
+        regs.byte.C = 0x0;
+        regs.byte.D = 0x0;
+        regs.byte.E = 0x08;
+        set_z();
+    } else {
+        memory[0xff4c] = 0x04;
+        memory[0xff6c] = 0x01;
     }
 }
 
@@ -297,9 +352,9 @@ int half_carry(u_int8 a, u_int8 b)
     return (((a & 0xf) + (b & 0xf)) & 0x10) == 0x10;
 }
 
-int is_set(u_int8 byte, int bit)
+int is_set(u_int16 byte, int bit)
 {
-    return byte & (1 << bit);
+    return (byte >> bit) & 1;
 }
 
 void set_bit(u_int8 *byte, int bit)
@@ -346,18 +401,13 @@ void read_rom(FILE* fp)
     fseek(fp,0L,SEEK_END);
     int size = ftell(fp);
     rewind(fp);
-    u_int8 arr[size];
-    int n = fread(arr,1,size,fp);
+    int n = fread(cart_rom,1,size,fp);
     if (n < 0) {
         exit(0);
     }
     int j = 0;
     for (int i = 0; i < 32768; ++i, ++j) {
-        memory[j] = arr[i];
-    }
-    j = 0;
-    for (int i = 0; i < size; ++i, ++j) {
-        cart_rom[j] = arr[i];
+        memory[j] = cart_rom[i];
     }
     fclose(fp);
 }
@@ -488,7 +538,6 @@ void restart()
     set_clock_freq();
     switch_mode(2);
     init_regs();
-    debug = 0;
     save_request = 0;
     load_request = 0;
     transfer_time = 0;
@@ -505,7 +554,7 @@ void restart()
     interrupt_cycles[3] = 456;
 }
 
-void process_opcode()
+int process_opcode()
 {
     switch (opcode) {
         case 0x00: break;
@@ -753,7 +802,7 @@ void process_opcode()
         case 0xFB: opcode_FB(); break;
         case 0xFE: opcode_FE(); break;
         case 0xFF: opcode_FF(); break;
-        default: printf("invalid opcode");
-        return;
+        default: return -1;
     }
+    return 0;
 }

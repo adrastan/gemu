@@ -32,12 +32,12 @@ void update_frame(void);
 
 #include "cpu_types.h"
 
-extern int debug;
 extern int save_request;
 extern int load_request;
 extern int cap;
 extern int ime;
 extern int halt;
+extern int stopped;
 extern int counter;
 extern char * file_name;
 extern char * title;
@@ -48,6 +48,8 @@ extern u_int8 opcode;
 extern char * title;
 extern char * save_file;
 extern char * file_location;
+extern int paused;
+extern int next;
 
 void prepare_file(char*);
 void start_cpu(char *);
@@ -68,8 +70,8 @@ void reset_c(void);
 void init_regs(void);
 void read_rom(FILE *);
 int half_carry(u_int8,u_int8);
-void process_opcode(void);
-int is_set(u_int8,int);
+int process_opcode(void);
+int is_set(u_int16,int);
 void push(u_int16);
 void set_delay(int);
 void print_flags(void);

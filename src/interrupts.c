@@ -23,8 +23,8 @@
 
 void check_interrupts()
 {
-    u_int8 i_enable = read_memory(0xffff); // get interrupt enable register
-    u_int8 i_request = read_memory(0xff0f); // get interrupt request register
+    u_int8 i_enable = memory[0xffff]; // get interrupt enable register
+    u_int8 i_request = memory[0xff0f]; // get interrupt request register
 
     if (halt && (is_set(i_enable,0)) && (is_set(i_request,0))) {
         halt = 0;
@@ -46,8 +46,8 @@ void check_interrupts()
 
 void do_interrupts()
 {
-    u_int8 i_enable = read_memory(0xffff); // get interrupt enable register
-    u_int8 i_request = read_memory(0xff0f); // get interrupt request register
+    u_int8 i_enable = memory[0xffff]; // get interrupt enable register
+    u_int8 i_request = memory[0xff0f]; // get interrupt request register
 
     // v blank
     if ((is_set(i_enable,0)) && (is_set(i_request,0))) {

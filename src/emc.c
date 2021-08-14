@@ -106,6 +106,9 @@ void startGame(int code)
 		case 44: start_cpu("games/donkeykongland.gb"); break;
 		case 45: start_cpu("games/mk2.gb"); break;
 		case 46: start_cpu("games/warioland2.gb"); break;
+		case 47: start_cpu("games/tetrisdx.gbc"); break;
+		case 48: start_cpu("games/donkeykongcountry.gbc"); break;
+		case 49: start_cpu("games/crazycastle3.gbc"); break;
 	}
 }
 

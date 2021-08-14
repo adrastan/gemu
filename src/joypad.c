@@ -56,7 +56,9 @@ void on_keydown(SDL_Keycode code)
 {
     switch (code) {
         case SDLK_KP_PLUS: cap = 0; break;
-        case SDLK_q: debug = 1; break;
+        case SDLK_q: debug = !debug; break;
+        case SDLK_p: paused = !paused; break;
+        case SDLK_n: next = 1; break;
         case SDLK_LEFT: handle_keydown(1); break;
         case SDLK_RIGHT: handle_keydown(0); break;
         case SDLK_UP: handle_keydown(2); break;

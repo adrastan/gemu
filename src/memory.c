@@ -23,14 +23,24 @@
 
 u_int8 memory[MEM_SIZE] = {0}; // 16-bit memory
 u_int8 cart_rom[4194304] = {0};
-u_int8 cart_ram[32768] = {0};
+u_int8 cart_ram[131072] = {0};
 u_int8 rtc_reg[5] = {0};
-u_int8 bank = 1; // current memory bank
+u_int8 vram[16384] = {0};
+u_int8 wram[32768] = {0};
+int bank = 1; // current memory bank
 u_int8 ram_bank = 0; // current ram bank
 u_int8 rtc_select = 0;
 int ram_enabled = 0; // enable/disable ram
 int bank_mode = 0; // banking mode
+int vram_bank = 0;
+int wram_bank = 1;
+int double_speed = 0;
+int prepare_speed = 0;
 cart_headers headers;
+Palette bg_palette;
+Palette spr_palette;
+DMA dma;
+int debug = 0;
 
 // real-time clock registers
 u_int8 rtc_s;

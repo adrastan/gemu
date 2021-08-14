@@ -19,11 +19,40 @@
 #ifndef LCD_CONTROLLER_H
 #define LCD_CONTROLLER_H
 
-struct sprite {
+struct Pixel {
+    int red;
+    int green;
+    int blue;
+};
+
+struct Tile {
+    struct Pixel px;
+    u_int8 attributes;
+    int priority;
+    int v_flip;
+    int h_flip;
+    int bank;
+    int palette;
+    int colour_number;
+    u_int8 byte1;
+    u_int8 byte2;
+    int transparent;
+};
+
+struct Sprite {
+    struct Pixel px;
     u_int8 y_pos;
     u_int8 x_pos;
     u_int8 tile_number;
     u_int8 attributes;
+    int bank;
+    int palette;
+    int priority;
+    int colour_number;
+    u_int16 address;
+    u_int8 byte1;
+    u_int8 byte2;
+    int transparent;
 };
 
 extern int interrupt_cycles[];
@@ -37,8 +66,7 @@ void compare_ly(void);
 void inc_ly(void);
 int get_mode(void);
 void update_lcd(int);
-void sort_sprites(struct sprite[], int);
+void sort_sprites(struct Sprite[], int);
 void draw_blank(void);
-int get_bg_colour(int);
 
 #endif // LCD_CONTROLLER_H

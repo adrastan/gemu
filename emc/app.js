@@ -1,4 +1,7 @@
 var games = [
+  { value: 47, text: "Tetris DX" },
+  { value: 48, text: "Donkey Kong Country Color"},
+  { value: 49, text: "Crazy Castle 3"},
   { value: 43, text: "Tetris" },
   { value: 44, text: "Donkey Kong Land" },
   { value: 1, text: "Donkey Kong Land 2" },

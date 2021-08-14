@@ -29,6 +29,12 @@
 #define MEM_SIZE 0x10000
 
 typedef struct {
+    int index;
+    int auto_inc;
+    u_int8 palette[64];
+} Palette;
+
+typedef struct {
     int mbc;
     u_int8 logo[48];
     u_int8 title[16];
@@ -38,22 +44,43 @@ typedef struct {
     int ram_size;
 } cart_headers;
 
+typedef struct {
+    u_int16 source;
+    u_int16 dest;
+    int length;
+    int active;
+    int position;
+} DMA;
+
 extern u_int8 memory[];
-extern u_int8 bank;
+extern int bank;
 extern u_int8 ram_bank;
 extern u_int8 rtc_select;
 extern u_int8 cart_rom[];
 extern u_int8 cart_ram[];
 extern u_int8 rtc_reg[];
+extern u_int8 vram[];
+extern u_int8 wram[];
+extern int wram_bank;
+extern int vram_bank;
 extern int ram_enabled;
 extern cart_headers headers;
 extern int bank_mode;
 extern int start_transfer;
 extern int fps_count;
 extern int transfer;
+extern int prepare_speed;
+extern int double_speed;
+extern int debug;
 
-static inline void do_banking(u_int16, u_int8);
+extern Palette bg_palette;
+extern Palette spr_palette;
+extern DMA dma;
+
+static inline void do_oam_transfer(u_int8);
 static inline void do_dma(u_int8);
+static inline void do_gdma(u_int8);
+static inline void do_hdma(void);
 u_int8 get_rtc(void);
 void write_rtc(u_int8,u_int8);
 static inline void do_sound(u_int16,u_int8);
@@ -62,35 +89,69 @@ void clear_sound_regs(void);
 void init_wave_ram(void);
 void ram_changed(u_int16, u_int8);
 
-static inline u_int8 mbc1_read(u_int16 address)
+static inline u_int8 read_memory(u_int16 address)
 {
-    // returns byte depending on rom bank
+    if (debug && paused) {
+        printf("READ: %x, BANK: %d, RAM BANK: %d, RAM_ENABLED: %d, VALUE: %x\n", address, bank, ram_bank, ram_enabled, memory[address]);
+        fflush(stdout);
+    }
+
+    if (address >= 0 && address <= 0x3FFF) {
+        return memory[address];
+    }
+
     if (address >= 0x4000 && address <= 0x7FFF) {
         return cart_rom[(address - 0x4000) + (bank * 0x4000)];
     }
-    // returns ram byte depending on ram bank
+
+    // VRAM
+    if (address >= 0x8000 && address <= 0x9FFF) {
+        return vram[(address - 0x8000) + vram_bank * 0x2000];
+    }
+
+    // External ram
     if (address >= 0xA000 && address <= 0xBFFF) {
         if (!ram_enabled) {
             return 0xFF;
         }
-        return cart_ram[(address - 0xA000) + (ram_bank * 8192)];
-    } else {
-        return memory[address];
+        if (headers.mbc == 2) {
+            address &= 0x01FF;
+        }
+        return cart_ram[(address - 0xA000) + (ram_bank * 0x2000)];
     }
+
+    // WRAM bank 0
+    if (address >= 0xC000 && address <= 0xCFFF) {
+        return wram[address - 0xC000];
+    }
+
+    // WRAM bank 1-7
+    if (address >= 0xD000 && address <= 0xDFFF) {  
+        return wram[(address - 0xD000) + wram_bank * 0x1000];
+    }
+
+    if (address == 0xff00) {
+        return joypad_state();
+    }
+
+    if (address == 0xff55) {
+        if (dma.active) {
+            return (u_int8)((dma.length / 0x10) - 1);
+        }
+        return memory[0xff55];
+    }
+
+    return memory[address];
 }
 
-static inline void mbc1_write(u_int16 address, u_int8 byte)
+static inline void mbc1(u_int16 address, u_int8 byte)
 {
-    static int rom_bank_lower = 0;
-    static int rom_bank_upper = 0;
+    static u_int16 rom_bank_lower = 0;
+    static u_int16 rom_bank_upper = 0;
 
     if (address >= 0 && address <= 0x1FFF) {
-        if ((byte & 0x0A) == 0x0A) {
-            ram_enabled = 1;
-        } else {
-            ram_enabled = 0;
-        }
-    } 
+        ram_enabled = (byte & 0x0A) == 0x0A;
+    }
     else if (address >= 0x2000 && address <= 0x3FFF) {
         if (!byte && bank_mode == 0) {
             byte = 1;
@@ -116,83 +177,27 @@ static inline void mbc1_write(u_int16 address, u_int8 byte)
     } 
     else if (address >= 0x6000 && address <= 0x7FFF) {
         bank_mode = byte & 1;
-    } 
-    else if (address >= 0xA000 && address <= 0xBFFF) {
-        if (!ram_enabled) {
-            return;
-        }
-        cart_ram[(address - 0xA000) + (ram_bank * 8192)] = byte;
-        ram_changed((address - 0xA000) + (ram_bank * 8192), byte);
-    } else {
-        memory[address] = byte;
-    }
-    
-}
-
-static inline u_int8 mbc2_read(u_int16 address)
-{
-    if (address >= 0 && address <= 0x3FFF) {
-        return memory[address];
-    } else if (address >= 0x4000 && address <= 0x7FFF) {
-        return cart_rom[(address - 0x4000) + (bank * 0x4000)];
-    } else if (address >= 0xA000 && address <= 0xA1FF) {
-        return cart_ram[address - 0xA000];
-    } else if (address >= 0xA200 && address <= 0xBFFF) {
-        address &= 0x01FF;
-        return cart_ram[address - 0xA000];
-    } else {
-        return memory[address];
     }
 }
 
-static inline void mbc2_write(u_int16 address, u_int8 byte)
+static inline void mbc2(u_int16 address, u_int8 byte)
 {
-    if (address >= 0 && address <= 0x1FFF) {
+    if (address <= 0x3FFF) {
         if (!is_set(address, 8)) {
-            ram_enabled = byte == 0x0A;
-        }
-    } else if (address >= 0x2000 && address <= 0x3FFF) {
-        bank = byte & 0x0F;
-        if (!bank) {
-            bank = 1;
-        }
-    } else if (address >= 0xA000 && address <= 0xA1FF) {
-        cart_ram[address - 0xA000] = byte;
-        ram_changed(address - 0xA000, byte);
-    } else {
-        memory[address] = byte;
-    }
-}
-
-static inline u_int8 mbc3_read(u_int16 address)
-{
-    if (address >= 0 && address <= 0x3FFF) {
-        return memory[address];
-    }
-    if (address >= 0x4000 && address <= 0x7FFF) {
-        return cart_rom[(address - 0x4000) + (bank * 0x4000)];
-    }
-    if (address >= 0xA000 && address <= 0xBFFF) {
-        if (!ram_enabled) {
-            return 0xFF;
-        }
-        if (rtc_select) {
-            return rtc_reg[ram_bank];
+            ram_enabled =(byte & 0x0A) == 0x0A;
         } else {
-            return cart_ram[(address - 0xA000) + (ram_bank * 8192)];
+            bank = byte & 0x0F;
+            if (!bank) {
+                bank = 1;
+            }
         }
     }
-    return memory[address];
 }
 
-static inline void mbc3_write(u_int16 address, u_int8 byte)
+static inline void mbc3(u_int16 address, u_int8 byte)
 {
     if (address >= 0 && address <= 0x1FFF) {
-        if ((byte & 0x0A) == 0x0A) {
-            ram_enabled = 1;
-        } else {
-            ram_enabled = 0;
-        }
+        ram_enabled =(byte & 0x0A) == 0x0A;
     }
     else if (address >= 0x2000 && address <= 0x3FFF) {
         if (!byte) {
@@ -209,131 +214,94 @@ static inline void mbc3_write(u_int16 address, u_int8 byte)
             ram_bank = byte >> 3;
         }
     }
-    else if (address >= 0xA000 && address <= 0xBFFF) {
-        if (!ram_enabled) {
-            return;
-        }
-        if (rtc_select) {
-            rtc_reg[ram_bank] = byte;
-        } else {
-            cart_ram[(address - 0xA000) + (ram_bank * 8192)] = byte;
-            ram_changed((address - 0xA000) + (ram_bank * 8192), byte);
-        }
-    }
-    else if (address >= 0x6000 && address <= 0x7FFF) {
-        
-    } 
-    else {
-        memory[address] = byte;
-    }
 }
 
-static inline u_int8 read_memory(u_int16 address)
+static inline void mbc5(u_int16 address, u_int8 byte)
 {
-    if (address == 0xff00) {
-        return joypad_state();
+    if (address >= 0 && address <= 0x1FFF) {
+        ram_enabled = (byte & 0x0A) == 0x0A;
     }
-
-    if (address == 0xff10) {
-        return memory[address] | 0x80;
+    else if (address >= 0x2000 && address <= 0x2FFF) {
+        bank = byte;
     }
-    if (address == 0xff11) {
-        return memory[address] | 0x3F;
+    else if (address >= 0x3000 && address <= 0x3FFF) {
+        bank = ((byte & 0x1) << 8) | (bank & 0xFF);
     }
-    if (address == 0xff12) {
-        return memory[address] | 0x00;
+    else if (address >= 0x4000 && address <= 0x5FFF) {
+        ram_bank = byte & 0xf;
     }
-    if (address == 0xff13) {
-        return memory[address] | 0xFF;
-    }
-    if (address == 0xff14) {
-        return memory[address] | 0xBF;
-    }
-
-    if (address == 0xff15) {
-        return memory[address] | 0xFF;
-    }
-    if (address == 0xff16) {
-        return memory[address] | 0x3F;
-    }
-    if (address == 0xff17) {
-        return memory[address] | 0x00;
-    }
-    if (address == 0xff18) {
-        return memory[address] | 0xFF;
-    }
-    if (address == 0xff19) {
-        return memory[address] | 0xBF;
-    }
-
-    if (address == 0xff1a) {
-        return memory[address] | 0x7F;
-    }
-    if (address == 0xff1b) {
-        return memory[address] | 0xFF;
-    }
-    if (address == 0xff1c) {
-        return memory[address] | 0x9F;
-    }
-    if (address == 0xff1d) {
-        return memory[address] | 0xFF;
-    }
-    if (address == 0xff1e) {
-        return memory[address] | 0xBF;
-    }
-
-    if (address == 0xff1f) {
-        return memory[address] | 0xFF;
-    }
-    if (address == 0xff20) {
-        return memory[address] | 0xFF;
-    }
-    if (address == 0xff21) {
-        return memory[address] | 0x00;
-    }
-    if (address == 0xff22) {
-        return memory[address] | 0x00;
-    }
-    if (address == 0xff23) {
-        return memory[address] | 0xBF;
-    }
-
-    if (address == 0xff24) {
-        return memory[address] | 0x00;
-    }
-    if (address == 0xff24) {
-        return memory[address] | 0x00;
-    }
-    if (address == 0xff24) {
-        return memory[address] | 0x70;
-    }
-
-    if (address >= 0xff27 && address <= 0xff2f) {
-        return 0xff;
-    }
-
-    if (headers.mbc == 0) {
-        return memory[address];
-    } else if (headers.mbc >= 1 && headers.mbc <= 3) {
-        return mbc1_read(address);
-    } else if (headers.mbc == 5 || headers.mbc == 6) {
-        return mbc2_read(address);
-    } else if (headers.mbc >= 0x0f && headers.mbc <= 0x13) {
-        return mbc3_read(address);
-    } else {
-        return 0xFF;
+    if (!bank) {
+        bank = 1;
     }
 }
 
 static inline void write_memory(u_int16 address, u_int8 byte)
 {
+    if (debug && paused) {
+        printf("WRITE: %x %x, BANK: %d\n", address, byte, bank);
+        fflush(stdout);
+    }
+    if (address >= 0 && address <= 0x7FFF) {
+        if (headers.mbc == 1) {
+            mbc1(address, byte);
+        }
+        else if (headers.mbc == 2) {
+            mbc2(address, byte);
+        }
+        else if (headers.mbc == 3) {
+            mbc3(address, byte);
+        }
+        else if (headers.mbc == 5) {
+            mbc5(address, byte);
+        }
+        return;
+    }
+
+    if (address >= 0x8000 && address <= 0x9FFF) {
+        vram[(address - 0x8000) + vram_bank * 0x2000] = byte;
+        memory[address] = byte;
+        return;
+    }
+
+    // External ram
+    if (address >= 0xA000 && address <= 0xBFFF) {
+        if (!ram_enabled) {
+            return;
+        }
+        if (headers.mbc == 2) {
+            address &= 0x01FF;
+        }
+        cart_ram[(address - 0xA000) + (ram_bank * 0x2000)] = byte;
+        return;
+    }
+
+    //echo
+    if (address >= 0xC000 && address <= 0xDDFF) {
+        memory[address + 0x2000] = byte;
+    }
+
+    // WRAM bank 0
+    if (address >= 0xC000 && address <= 0xCFFF) {
+        wram[address - 0xC000] = byte;
+        return;
+    }
+
+    // WRAM bank 1-7
+    if (address >= 0xD000 && address <= 0xDFFF) {  
+        if (((address - 0xD000) + wram_bank * 0x1000) >= 32768) {
+            printf("wram out of range\n");
+        }
+        wram[(address - 0xD000) + wram_bank * 0x1000] = byte;
+        return;
+    }
+
     if (address >= 0xFF10 && address <= 0xFF3F) {
         do_sound(address, byte);
         return;
     }
     // DMA transfer
     if (address == 0xff46) {
-        do_dma(byte);
+        do_oam_transfer(byte);
         memory[address] = byte;
         return;
     }
@@ -364,30 +332,107 @@ static inline void write_memory(u_int16 address, u_int8 byte)
         memory[address-0x2000] = byte;
         return;
     }
-    // echo memory
-    if (address >= 0xC000 && address < 0xDE00) {
+
+    if (address == 0xff51) {
+        dma.source = ((byte << 8) | (memory[0xff52])) & 0xFFF0;
         memory[address] = byte;
-        memory[address+0x2000] = byte;
         return;
     }
+
+    if (address == 0xff52) {
+        dma.source = ((memory[0xff51] << 8) | (byte)) & 0xFFF0;
+        memory[address] = byte;
+        return;
+    }
+
+    if (address == 0xff53) {
+        dma.dest = ((byte << 8) | (memory[0xff54])) & 0x1FF0;
+        memory[address] = byte;
+        return;
+    }
+
+    if (address == 0xff54) {
+        dma.dest = ((memory[0xff53] << 8) | (byte)) & 0x1FF0;
+        memory[address] = byte;
+        return;
+    }
+
+    if (address == 0xff55) {
+        do_dma(byte);
+        return;
+    }
+
+    if (address == 0xff68) {
+        bg_palette.auto_inc = is_set(byte, 7);
+        bg_palette.index = 0x3f & byte;
+        memory[address] = byte;
+        return;
+    }
+
+    if (address == 0xff69) {
+        bg_palette.palette[bg_palette.index] = byte;
+        if (bg_palette.auto_inc) {
+            ++bg_palette.index;
+            if (bg_palette.index > 0x3f) {
+                bg_palette.index = 0;
+            }
+        }
+        memory[address] = byte;
+        return;
+    }
+
+    if (address == 0xff6A) {
+        spr_palette.auto_inc = is_set(byte, 7);
+        spr_palette.index = 0x3f & byte;
+        memory[address] = byte;
+        return;
+    }
+
+    if (address == 0xff6B) {
+        spr_palette.palette[spr_palette.index] = byte;
+        if (spr_palette.auto_inc) {
+            spr_palette.index++;
+            if (spr_palette.index > 0x3f) {
+                spr_palette.index = 0;
+            }
+        }
+        memory[address] = byte;
+        return;
+    }
+
     // unusable memory
     if (address >= 0xFEA0 && address <= 0xFEFF) {
         return;
     }
 
-    if (headers.mbc == 0 && address >= 0x8000) {
-        memory[address] = byte;
-    } else if (headers.mbc >= 1 && headers.mbc <= 3) {
-        mbc1_write(address, byte);
-    } else if (headers.mbc == 5 || headers.mbc == 6) {
-        mbc2_write(address, byte);
-    } else if (headers.mbc >= 0x0f && headers.mbc <= 0x13) {
-        mbc3_write(address, byte);
+    if (address == 0xff4f && headers.cgb) {
+        vram_bank = 1 & byte;
     }
+
+    if (address == 0xff70 && headers.cgb) {
+        wram_bank = byte & 7;
+        if (!wram_bank) 
+            wram_bank = 1;
+    }
+
+    if (headers.cgb && address == 0xFF4D) {
+        if (is_set(byte, 0)) {
+            printf("prepare speed %d\n", double_speed);
+            prepare_speed = 1;
+        }
+        memory[address] = byte;
+        return;
+    }
+
+    if (headers.cgb && address == 0xFF56) {
+        printf("infrared not supported\n");
+    }
+
+    memory[address] = byte;
 }
 
 // transfer sprite data to oam memory
-static inline void do_dma(u_int8 byte)
+static inline void do_oam_transfer(u_int8 byte)
 {
     int b = (int)byte << 8;
     int c = 0x00;
@@ -395,7 +440,48 @@ static inline void do_dma(u_int8 byte)
         write_memory(0xfe00+c, read_memory(i));
         ++c;
     }
-    return;
+}
+
+static inline void do_dma(u_int8 byte)
+{
+    if (!is_set(byte, 7)) {
+        if (dma.active) {
+            dma.active = 0;
+        } else {
+            do_gdma(byte);
+        }
+    } else {
+        dma.length = ((byte & 0x7f) + 1) * 0x10;
+        dma.position = 0;
+        dma.active = 1;
+    }
+}
+
+static inline void do_gdma(u_int8 byte)
+{
+    int length = ((byte & 0x7F) + 1) * 0x10;
+    for (int i = 0; i < length; ++i) {
+        write_memory(dma.dest + 0x8000 + i, read_memory(dma.source + i));
+    }
+    memory[0xff55] = 0xff;
+}
+
+static inline void do_hdma()
+{
+    for (int i = 0; i < 0x10; ++i) {
+        if (dma.dest + 0x8000 + i + dma.position > 0x9FFF) {
+            dma.active = 0;
+            memory[0xff55] = 0xff;
+            return;
+        }
+        write_memory(dma.dest + 0x8000 + i + dma.position, read_memory(dma.source + i + dma.position));
+        dma.length--;
+    }
+    dma.position += 0x10;
+    if (dma.length == 0) {
+        memory[0xff55] = 0xff;
+        dma.active = 0;
+    }
 }
 
 static inline void do_sound(u_int16 address, u_int8 byte)

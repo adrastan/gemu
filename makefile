@@ -48,19 +48,19 @@ main.exe : $(C_OBJS) $(C++_OBJS)
 	g++ -o main.exe $(C_OBJS) $(C++_OBJS) $(C_FLAGS) $(LIB) $(SDL_LDFLAGS)
 
 obj/%.o : src/%.cpp
-	g++ $(INC) $(SDL_CFLAGS) -c $< -o $@
+	g++ $(INC) $(SDL_CFLAGS) -O2 -c $< -o $@
 
 obj/%.o : Gb_Snd_Emu-0.1.4/%.cpp
-	g++ $(INC) $(SDL_CFLAGS) -c $< -o $@
+	g++ $(INC) $(SDL_CFLAGS) -O2 -c $< -o $@
 
 obj/%.o : Gb_Snd_Emu-0.1.4/gb_apu/%.cpp
-	g++ $(INC) $(SDL_CFLAGS) -c $< -o $@	
+	g++ $(INC) $(SDL_CFLAGS) -O2 -c $< -o $@	
 
 obj/%.o : src/%.cpp
-	g++ $(INC) $(SDL_CFLAGS) -c $< -o $@	
+	g++ $(INC) $(SDL_CFLAGS) -O2 -c $< -o $@	
 
 obj/%.o : src/%.c
-	gcc $(INC) $(SDL_CFLAGS) -c $< -o $@
+	gcc $(INC) $(SDL_CFLAGS) -O2 -c $< -o $@
 
 clean :
 	rm -rf main.exe obj/* emc/obj/*
