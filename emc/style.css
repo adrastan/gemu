@@ -24,6 +24,26 @@ canvas {
     flex-direction: column;
 }
 
+#gb-main {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+#gb-menu {
+    
+}
+
+.gb-game {
+    padding: 1rem;
+    border-bottom: thin solid lightgrey;
+    cursor: pointer;
+}
+
+.gb-game:active {
+    background-color: lightgrey
+}
+
 #control {
     display: flex;
     flex-direction: column;
@@ -149,6 +169,7 @@ select {
 }
 
 #actions {
+    background-color: lightgrey;
     display: grid;
     flex: 1;
     grid-template-areas: "screen screen"

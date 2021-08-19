@@ -154,7 +154,6 @@ void update_frame(SDL_Event *event)
     counter = delay;
     delay = 0;
     if (!halt) {
-
         opcode = read_memory(pc.PC++);
         if (debug && paused) {
             printf("OPCODE: %x\n", opcode);
@@ -370,6 +369,18 @@ void reset_bit(u_int8 *byte, int bit)
 // initializes registers
 void init_regs()
 {
+    for (int i = 0x8000; i < 0x10000; ++i) {
+        memory[i] = 0;
+    }
+    for (int i = 0; i < 131072; ++i) {
+        cart_ram[i] = 0;
+        if (i < 16384) {
+            vram[i] = 0;
+        }
+        if (i < 32768) {
+            wram[i] = 0;
+        }
+    }
     pc.PC = 0x0100;
     sp.SP = 0xFFFE;
     regs.word.AF = 0x01B0;
@@ -393,6 +404,28 @@ void init_regs()
     write_memory(0xFFFF, 0x00);
     memory[0xFF00] = 0xFF;
     memory[0xFF02] = 0x7C;
+    save_request = 0;
+    load_request = 0;
+    transfer_time = 0;
+    transfer = 0;
+    count = 0;
+    delay = 0;
+    halt = 0;
+    fps_count = 0;
+    ime = 1;
+    counter = 0;    
+    bank = 1;
+    ram_bank = 0;
+    vram_bank = 0;
+    wram_bank = 1;
+    bank_mode = 0;
+    double_speed = 0;
+    prepare_speed = 0;
+    interrupt_cycles[0] = 204;
+    interrupt_cycles[1] = 80;
+    interrupt_cycles[2] = 172;
+    interrupt_cycles[3] = 456;
+    dma.active = 0;
 }
 
 // reads the contents of rom file to memory
@@ -531,27 +564,10 @@ u_int8* get_state()
 // resets the emulator
 void restart()
 {
-    for (int i = 0x8000; i < 0x10000; ++i) {
-        memory[i] = 0;
-        cart_ram[i-0x8000] = 0;
-    }
     set_clock_freq();
     switch_mode(2);
     init_regs();
-    save_request = 0;
-    load_request = 0;
-    transfer_time = 0;
-    transfer = 0;
-    count = 0;
-    delay = 0;
-    halt = 0;
-    fps_count = 0;
-    ime = 1;
-    counter = 0;
-    interrupt_cycles[0] = 204;
-    interrupt_cycles[1] = 80;
-    interrupt_cycles[2] = 172;
-    interrupt_cycles[3] = 456;
+    initCart();
 }
 
 int process_opcode()

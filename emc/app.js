@@ -104,27 +104,75 @@ Vue.component("gb-control", {
   },
   template: `
     <div id="control">
-      <div class="menu">
-        <select id="selectGame" @change="selectedChanged">
-          <option selected disabled>Choose a game</option>
-          <option v-for="option in options" :value="option.value">{{option.text}}</option>
-        </select>
-        <input type="range" min="0" max="100" value="100" @change="gameSpeedChanged" />
-      </div>
+      <div class="menu"></div>
       <gb-buttons></gb-buttons>
     </div>
   `
 })
 
-Vue.component("gb-root", {
+Vue.component("gb-main", {
   mounted() {
     initialiseCanvas();
     initialiseTouch();
   },
   template: `
-    <div id="gb-root">
+    <div id="gb-main">
       <gb-screen></gb-screen>
       <gb-control></gb-control>
+    </div>
+  `
+})
+
+Vue.component("gb-menu", {
+  data() {
+    return {
+      games: games
+    }
+  },
+  props: {
+    selectedGameChanged: Object
+  },
+  methods: {
+    selectGame(e) {
+      if (this.selectedGameChanged) {
+        this.selectedGameChanged(e);
+      }
+    }
+  },
+  template: `
+    <div id="gb-menu">
+      <div v-for="game in games">
+        <div @click="selectGame(game)" class="gb-game">{{game.text}}</div>
+      </div>
+    </div>
+  `
+})
+
+Vue.component("gb-root", {
+  data() {
+    return {
+      selectedGame: null
+    }
+  },
+  methods: {
+    async selectedGameChanged(game) {
+      console.log(game);
+      window.cancelAnimationFrame(window.nextFrame);
+      if (typeof audio === "undefined") {
+        window.audio = new SoundController();
+      } else {
+        window.audio.restart();
+      }
+      window.Module._startGame(parseInt(game.value));
+      await loadSave();
+      fn();
+      this.selectedGame = game;
+    },
+  },
+  template: `
+    <div id="gb-root">
+      <gb-main v-if="selectedGame"></gb-main>
+      <gb-menu :selectedGameChanged="selectedGameChanged" v-else></gb-menu>
     </div>
   `
 })

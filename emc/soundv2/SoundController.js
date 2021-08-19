@@ -89,12 +89,10 @@ class SoundController {
   restart() {
     this.frame = 0;
     this.cycles = 0;
+    this.sampleTimer = SAMPLE_RATE;
     this.clearRegs();
-    this.channel1.stop();
-    this.channel2.stop();
-    this.channel3.stop();
-    this.channel4.stop();
-    this.initChannels();
+    this.stop();
+    // this.initChannels();
   }
 
   // 4194304

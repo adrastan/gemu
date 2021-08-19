@@ -6,6 +6,18 @@ db.version(1).stores({
 });
 db.open();
 
+var restart = async function() {
+  try {
+    console.log("restart")
+    audio.restart();
+    frames = [];
+    Module._restartPress();
+    await this.loadSave();
+  } catch (e) {
+    console.error(e);
+  }
+}
+
 var loadSave = async function() {
   let title = "";
   for (let i = 0x134; i <= 0x143; ++i) {
@@ -13,11 +25,11 @@ var loadSave = async function() {
   }
   window.game = await db.game.get(title);
   if (!window.game) {
-    await db.game.put({ name: title, ram: new Uint8Array(32768) });
+    await db.game.put({ name: title, ram: new Uint8Array(131072) });
     window.game = await db.game.get(title);
   }
   console.log(title, game);
-  for (let i = 0; i < 32768; ++i) {
+  for (let i = 0; i < 131072; ++i) {
     cartRam[i] = game.ram[i];
   }
 }
@@ -32,6 +44,7 @@ var loadCart = async function(arr) {
   for (let i = 0; i < arr.byteLength; ++i, ++j) {
     cartRom[j] = buffer[i];
   }
+  console.log(arr);
   await loadSave();
   audio = new SoundController();
   Module._startCpu();
@@ -102,6 +115,7 @@ let update_sound = function(cycles) {
 }
 
 let frames = [];
+let saving = false;
 
 let draw = function() {
   if (!frames.length) {
@@ -113,7 +127,12 @@ let draw = function() {
   mainCtx.drawImage(smallCanvas, 0, 0, 160, 144, 0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
   
   // audio.endFrame();
-  db.game.put(window.game);
+  if (!saving) {
+    saving = true;
+    db.game.put(window.game).then(() => {
+      saving = false;
+    });
+  }
   window.nextFrame = requestAnimationFrame(draw);
 }
 
@@ -136,7 +155,7 @@ let fn = function() {
 Module.onRuntimeInitialized = function() {
   memory = new Uint8Array(Module.HEAPU8.buffer, Module._getMemoryPtr(), 0x10000);
   cartRom = new Uint8Array(Module.HEAPU8.buffer, Module._getCartPtr(), 4194304);
-  cartRam = new Uint8Array(Module.HEAPU8.buffer, Module._getRamPtr(), 32768);
+  cartRam = new Uint8Array(Module.HEAPU8.buffer, Module._getRamPtr(), 131072);
   vm.loaded = true;
 };
 
@@ -443,8 +462,7 @@ var initialiseTouch = function() {
       Module._keyPress(6);
     }
     if (e.keyCode === 82) { //R
-      audio.restart();
-      Module._restartPress();
+      window.restart();
     }
   })
 
