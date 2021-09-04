@@ -156,17 +156,21 @@ Vue.component("gb-root", {
   },
   methods: {
     async selectedGameChanged(game) {
-      console.log(game);
-      window.cancelAnimationFrame(window.nextFrame);
-      if (typeof audio === "undefined") {
-        window.audio = new SoundController();
-      } else {
-        window.audio.restart();
+      try {
+        console.log(game);
+        window.cancelAnimationFrame(window.nextFrame);
+        if (typeof audio === "undefined") {
+          window.audio = new SoundController();
+        } else {
+          window.audio.restart();
+        }
+        window.Module._startGame(parseInt(game.value));
+        await loadSave();
+        fn();
+        this.selectedGame = game;
+      } catch (e) {
+        alert(e.message);
       }
-      window.Module._startGame(parseInt(game.value));
-      await loadSave();
-      fn();
-      this.selectedGame = game;
     },
   },
   template: `

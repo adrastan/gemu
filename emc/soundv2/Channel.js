@@ -5,15 +5,17 @@ class Channel {
     this.start = null;
     this.sources = [];
     this.currentlyPlaying = [];
-
-    this.panner = this.ctx.createStereoPanner();
-    this.panner.pan.value = 0;
-    this.panner.connect(this.ctx.destination);
-    
     this.merger = this.ctx.createChannelMerger(2);
     this.splitter = this.ctx.createChannelSplitter(2);
 
-    this.merger.connect(this.panner);
+    if (this.ctx.createStereoPanner) {
+      this.panner = this.ctx.createStereoPanner();
+      this.panner.pan.value = 0;
+      this.panner.connect(this.ctx.destination);
+      this.merger.connect(this.panner);
+    } else {
+      this.merger.connect(this.ctx.destination);
+    }
 
     this.leftGain = this.ctx.createGain();
     this.rightGain = this.ctx.createGain();
