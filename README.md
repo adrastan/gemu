@@ -1,5 +1,5 @@
 # Gemu
-Nintendo Gameboy emulator for Windows.
+Nintendo Gameboy emulator for Windows and browsers.
 
 Currently usable with most games working. Uses SDL for video and input.
 
