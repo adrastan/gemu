@@ -23,8 +23,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-extern "C" {
-
 #include "sound.h"
 #include "memory.h"
 
@@ -53,8 +51,6 @@ int * getRamPtr()
 	return (int *)&cart_ram[0];
 }
 #endif
-
-}
 
 int is_enabled() {
 	return is_set(memory[0xFF26], 7);

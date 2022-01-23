@@ -17,9 +17,14 @@
  */
 
 #include <stdlib.h>
-
+#include <ctype.h>
+#include <string.h>
 #ifndef EMSCRIPTEN
 #include <SDL2/SDL.h>
+SDL_Window* sdl_window = NULL;
+SDL_Surface* screen_surface = NULL;
+SDL_Texture* texture = NULL;
+SDL_Renderer* renderer = NULL;
 SDL_Event event;
 #endif
 
@@ -32,6 +37,9 @@ SDL_Event event;
 #include "interrupts.h"
 #include "joypad.h"
 #include "sound.h"
+
+char a[100];
+char c[100];
 
 char * title = NULL; // title of the rom without extension
 char * file_location = NULL; // absolute file location
@@ -821,4 +829,41 @@ int process_opcode()
         default: return -1;
     }
     return 0;
+}
+
+void prepare_file(char * file_n)
+{
+    file_location = file_n;
+    int i;
+    int found = 0;
+
+    // go to start of file name
+    while (*(file_n++) != '\0') {
+        if (*file_n == '/' || *file_n == '\\') {
+            found = 1;
+        }
+    }
+    if (found) {
+        while (*file_n != '/' && *file_n != '\\') {
+            --file_n;
+        }
+        ++file_n;
+    } else {
+        file_n = file_location;
+    }
+
+    char * b = file_n;
+
+    // copy rom title to a
+    for (i = 0; *b != '.'; ++i) {
+        a[i] = *b;
+        ++b;
+    }
+    a[i] = '\0';
+
+    // create save file extension
+    strcpy(c,a);
+    title = a;
+    strcat(c,".SAVE");
+    save_file = c;
 }

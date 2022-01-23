@@ -23,6 +23,10 @@
 
 #ifndef EMSCRIPTEN
 #include <SDL2/SDL.h>
+extern SDL_Window* sdl_window;
+extern SDL_Surface* screen_surface;
+extern SDL_Texture* texture;
+extern SDL_Renderer* renderer;
 void update_frame(SDL_Event *);
 #endif
 
@@ -31,6 +35,9 @@ void update_frame(void);
 #endif
 
 #include "cpu_types.h"
+
+#define SCREEN_WIDTH 160*3
+#define SCREEN_HEIGHT 144*3
 
 extern int save_request;
 extern int load_request;
@@ -83,5 +90,7 @@ void load_state(void);
 u_int8* get_state(void);
 void restart(void);
 void initCart(void);
+
+void prepare_file(char *);
 
 #endif // CPU_H

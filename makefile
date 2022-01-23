@@ -1,6 +1,7 @@
 INC=-I./ \
 	-I./Gb_Snd_Emu-0.1.4 \
 	-I./Gb_Snd_Emu-0.1.4/gb_apu \
+	-I./src/core
 	
 SDL_INC=-IC:\msys64\mingw64\include \
 		-IC:\msys64\mingw64\include\SDL2
@@ -14,9 +15,9 @@ C_OBJS=obj/cpu.o obj/interrupts.o obj/joypad.o \
 C++_OBJS=obj/main.o obj/sound.o obj/Basic_Gb_Apu.o obj/Sound_Queue.o obj/Multi_Buffer.o obj/Gb_Oscs.o \
 	obj/Gb_Apu.o obj/Blip_Buffer.o
 
-EMC_OBJS=emc/obj/sound.o emc/obj/cpu.o emc/obj/interrupts.o emc/obj/joypad.o \
-	emc/obj/lcd_controller.o emc/obj/memory.o emc/obj/opcodes.o emc/obj/pre_opcodes.o emc/obj/registers.o \
-	emc/obj/timers.o emc/obj/emc.o
+EMC_OBJS=build/emc/obj/sound.o build/emc/obj/cpu.o build/emc/obj/interrupts.o build/emc/obj/joypad.o \
+        build/emc/obj/lcd_controller.o build/emc/obj/memory.o build/emc/obj/opcodes.o build/emc/obj/pre_opcodes.o build/emc/obj/registers.o \
+        build/emc/obj/timers.o build/emc/obj/emc.o
 
 C_FLAGS=-Wall -O2
 
@@ -24,43 +25,25 @@ SDL_CFLAGS := $(shell sdl2-config --cflags)
 SDL_LDFLAGS := $(shell sdl2-config --libs)
 
 web	: clean $(EMC_OBJS)
-	emcc -o emc/gemu.html --shell-file emc/shell.html $(EMC_OBJS) --preload-file games
+	emcc -o build/emc/gemu.html --shell-file src/web/shell.html $(EMC_OBJS)
 
-emc/obj/%.o : src/%.cpp
+build/emc/obj/%.o : src/%.cpp
 	emcc $(INC) $(SDL_INC) -O2 -c $< -o $@
 
-emc/obj/%.o : Gb_Snd_Emu-0.1.4/%.cpp
+build/emc/obj/%.o : src/external/Gb_Snd_Emu-0.1.4/%.cpp
 	emcc $(INC) $(SDL_INC) -O2 -c $< -o $@
 
-emc/obj/%.o : Gb_Snd_Emu-0.1.4/gb_apu/%.cpp
+build/emc/obj/%.o : src/external/Gb_Snd_Emu-0.1.4/gb_apu/%.cpp
 	emcc $(INC) $(SDL_INC) -O2 -c $< -o $@
 
-emc/obj/%.o : src/%.cpp
+build/emc/obj/%.o : src/%.cpp
 	emcc $(INC) $(SDL_INC) -O2 -c $< -o $@
 
-emc/obj/%.o : src/%.c
+build/emc/obj/%.o : src/%.c
 	emcc $(INC) $(SDL_INC) -O2 -c $< -o $@
 
-
-pc : clean main.exe
-
-main.exe : $(C_OBJS) $(C++_OBJS)
-	g++ -o main.exe $(C_OBJS) $(C++_OBJS) $(C_FLAGS) $(LIB) $(SDL_LDFLAGS)
-
-obj/%.o : src/%.cpp
-	g++ $(INC) $(SDL_CFLAGS) -O2 -c $< -o $@
-
-obj/%.o : Gb_Snd_Emu-0.1.4/%.cpp
-	g++ $(INC) $(SDL_CFLAGS) -O2 -c $< -o $@
-
-obj/%.o : Gb_Snd_Emu-0.1.4/gb_apu/%.cpp
-	g++ $(INC) $(SDL_CFLAGS) -O2 -c $< -o $@	
-
-obj/%.o : src/%.cpp
-	g++ $(INC) $(SDL_CFLAGS) -O2 -c $< -o $@	
-
-obj/%.o : src/%.c
-	gcc $(INC) $(SDL_CFLAGS) -O2 -c $< -o $@
+build/emc/obj/%.o : src/core/%.cpp
+	emcc $(INC) $(SDL_INC) -O2 -c $< -o $@
 
 clean :
-	rm -rf main.exe obj/* emc/obj/*
+	rm -rf build/emc/main.exe build/emc/obj/* build/emc/obj/*
