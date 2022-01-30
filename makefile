@@ -25,7 +25,7 @@ SDL_CFLAGS := $(shell sdl2-config --cflags)
 SDL_LDFLAGS := $(shell sdl2-config --libs)
 
 web	: clean $(EMC_OBJS)
-	emcc -o build/emc/gemu.html --shell-file src/web/shell.html $(EMC_OBJS)
+	emcc -o build/emc/gemu.html --shell-file src/web/shell.html $(EMC_OBJS) -s FORCE_FILESYSTEM=1
 
 build/emc/obj/%.o : src/%.cpp
 	emcc $(INC) $(SDL_INC) -O2 -c $< -o $@

@@ -1,4 +1,8 @@
-class Noise extends Channel {
+import Channel from "./Channel";
+import { isSet, getBit } from "../utils";
+import { BUF_SIZE } from "./SoundController";
+
+export default class Noise extends Channel {
   constructor(ctx) {
     super(ctx);
     this.cycles = 0;

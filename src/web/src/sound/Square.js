@@ -1,4 +1,8 @@
-class Square extends Channel {
+import Channel from "./Channel";
+import { isSet } from "../utils";
+import { BUF_SIZE } from "./SoundController";
+
+export default class Square extends Channel {
   constructor(ctx) {
     super(ctx);
     this.dutyTable = {

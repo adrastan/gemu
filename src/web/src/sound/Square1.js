@@ -1,5 +1,7 @@
+import Square from "./Square";
+import { isSet } from "../utils";
 
-class Square1 extends Square {
+export default class Square1 extends Square {
   constructor(ctx) {
     super(ctx);
     this.channelName = "channel1";

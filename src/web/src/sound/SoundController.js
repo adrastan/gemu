@@ -1,8 +1,16 @@
-var BUF_SIZE = 4000;
-var SAMPLE_RATE = Math.round(4194304 / 48000);
-var SOURCE_SAMPLE_RATE = 1;
+'use strict';
 
-class SoundController {
+import Square1 from "./Square1";
+import Square2 from "./Square2";
+import Wave from "./Wave";
+import Noise from "./Noise"
+import { isSet } from "../utils";
+
+export var BUF_SIZE = 4000;
+export var SAMPLE_RATE = Math.round(4194304 / 48000);
+export var SOURCE_SAMPLE_RATE = 1;
+
+export default class SoundController {
   constructor() {
     this.ctx = new (window.AudioContext || window.webkitAudioContext)();
     this.initChannels();

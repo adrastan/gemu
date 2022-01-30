@@ -99,6 +99,7 @@ void update_joypad(SDL_KeyboardEvent *key)
 #endif
 
 #ifdef EMSCRIPTEN
+extern "C" {
 EMSCRIPTEN_KEEPALIVE
 void keyPress(int keyCode)
 {
@@ -127,5 +128,6 @@ EMSCRIPTEN_KEEPALIVE
 void restartPress()
 {
     restart();
+}
 }
 #endif

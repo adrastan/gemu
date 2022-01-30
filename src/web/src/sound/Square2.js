@@ -1,4 +1,7 @@
-class Square2 extends Square {
+import Square from "./Square";
+import { isSet } from "../utils";
+
+export default class Square2 extends Square {
 
   constructor(ctx) {
     super(ctx);

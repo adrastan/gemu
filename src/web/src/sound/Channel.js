@@ -1,4 +1,6 @@
-class Channel {
+import { SOURCE_SAMPLE_RATE } from "./SoundController";
+
+export default class Channel {
   constructor(ctx) {
     this.ctx = ctx;
     this.buffer = [];

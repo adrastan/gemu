@@ -27,6 +27,7 @@
 #include "memory.h"
 
 #ifdef EMSCRIPTEN
+extern "C" {
 EMSCRIPTEN_KEEPALIVE
 int * getSoundRegisters()
 {
@@ -49,6 +50,7 @@ EMSCRIPTEN_KEEPALIVE
 int * getRamPtr()
 {
 	return (int *)&cart_ram[0];
+}
 }
 #endif
 
