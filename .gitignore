@@ -12,3 +12,5 @@ games
 node_modules
 *.wasm
 emc/gemu.*
+build
+CMakeLists.txt.user

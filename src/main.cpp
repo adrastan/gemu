@@ -16,32 +16,15 @@
  *
  */
 
+#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 #include <iostream>
 
-#ifdef __cplusplus
-extern "C"
-{
-#endif
 #include "cpu.h"
 #include "sound.h"
-#ifdef __cplusplus
-}
-#endif
-
-#define SCREEN_WIDTH 160*3
-#define SCREEN_HEIGHT 144*3
-
-SDL_Window* window = NULL;
-SDL_Surface* screen_surface = NULL;
-SDL_Texture* texture = NULL;
-SDL_Renderer* renderer = NULL;
-
-char a[100];
-char c[100];
 
 void stop_SDL(void);
 void init_SDL(void);
@@ -61,7 +44,7 @@ void start_emulator(char* game)
 	
 	init_SDL();
 	start_cpu(game);
-	init_sound();
+    init_sound();
 	start_main_loop();
 	stop_SDL();
 }
@@ -83,49 +66,12 @@ void init_SDL() {
 		return;
 	}
 
-	SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0, &window, &renderer);
+    SDL_CreateWindowAndRenderer(SCREEN_WIDTH, SCREEN_HEIGHT, 0, &sdl_window, &renderer);
     screen_surface = SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 24, 0, 0, 0, 0);
 }
 
 void stop_SDL() 
 {
-	SDL_DestroyWindow(window);
+    SDL_DestroyWindow(sdl_window);
 	SDL_Quit();
-}
-
-void prepare_file(char * file_n)
-{
-	file_location = file_n;
-	int i;
-	int found = 0;
-
-	// go to start of file name
-	while (*(file_n++) != '\0') {
-		if (*file_n == '/' || *file_n == '\\') {
-			found = 1;
-		}
-	}
-	if (found) {
-		while (*file_n != '/' && *file_n != '\\') {
-			--file_n;
-		}
-		++file_n;
-	} else {
-		file_n = file_location;
-	}
-
-	char * b = file_n;
-
-	// copy rom title to a
-	for (i = 0; *b != '.'; ++i) {
-		a[i] = *b;
-		++b;
-	}
-	a[i] = '\0';
-
-	// create save file extension
-	strcpy(c,a);
-	title = a;
-	strcat(c,".SAVE");
-	save_file = c;
 }
