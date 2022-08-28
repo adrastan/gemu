@@ -14,3 +14,4 @@ node_modules
 emc/gemu.*
 build
 CMakeLists.txt.user
+*.sh
