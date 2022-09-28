@@ -15,6 +15,7 @@ Cartridge::Cartridge(u8 * const buf, int size)
 
     this->is_ram_enabled = this->rom[0x149];
 
+    // Get Memory Bank Controller
     if (this->rom[0x147] >= 1 && this->rom[0x147] <= 3)
     {
         this->mbc = 1;
@@ -32,11 +33,13 @@ Cartridge::Cartridge(u8 * const buf, int size)
         this->mbc = 5;
     }
 
+    // Get logo
     for (int i = 0; i < 48; ++i)
     {
         this->logo[i] = this->rom[0x104 + i];
     }
 
+    // Get title
     for (int i = 0; i < 16; ++i)
     {
         this->title[i] = this->rom[0x134 + i];

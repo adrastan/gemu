@@ -28,6 +28,16 @@ add_library(
     src/core/system.h
     src/core/cartridge.cpp
     src/core/cartridge.h
+    src/core/lcd_controller.cpp
+    src/core/lcd_controller.h
+    src/core/memory.cpp
+    src/core/memory.h
+    src/core/sound.cpp
+    src/core/sound.h
+    src/core/timers.cpp
+    src/core/timers.h
+    src/core/cpu.cpp
+    src/core/cpu.h
 )
 target_link_libraries(gemu_core SDL2::SDL2 gemu_lib -lmingw32)
 target_include_directories(gemu_core PRIVATE src/core ${SDL2_INCLUDE_DIRS})

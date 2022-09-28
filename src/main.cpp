@@ -10,12 +10,11 @@ int main(int argv, char **argc)
         return 0;
     }
 
-    System system;
     std::string rom_path;
     rom_path = argc[1];
 
     Logger::log("Loading cart from file: " + rom_path);
-    system.load_cart_from_file(rom_path);
+    System system(rom_path);
 
     Logger::log("Powering on...");
     system.power_on();
