@@ -12,6 +12,8 @@ class Cartridge
     ~Cartridge();
 
     std::unique_ptr<u8[]> rom;
+    u8 ram[131072];
+
     int size;
     int rom_size;
     int ram_size;

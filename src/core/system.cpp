@@ -67,7 +67,7 @@ void System::next_op()
     this->delay = 0;
     if (!this->halt)
     {
-        this->opcode = this->memory->read_memory(this->cpu->PC++);
+        this->opcode = this->memory->read_memory(this->cpu->pc.PC++);
         this->counter += System::op_cycles[this->opcode];
         this->process_opcode();
     }

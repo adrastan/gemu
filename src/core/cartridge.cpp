@@ -12,6 +12,9 @@ Cartridge::Cartridge(u8 * const buf, int size)
     {
         rom[i] = buf[i];
     }
+    for (int i = 0; i < 131072; ++i) {
+        ram[i] = 0;
+    }
 
     this->is_ram_enabled = this->rom[0x149];
 
