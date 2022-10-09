@@ -4,6 +4,7 @@
 #define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 #include <string>
+#include <memory>
 
 #include "cartridge.h"
 #include "file.h"
@@ -69,13 +70,14 @@ class System
     SDL_Texture* texture = NULL;
     SDL_Renderer* renderer = NULL;
     SDL_Event event;
-    Cartridge *cart;
-    File *rom_file;
-    LCDController *lcd_controller;
-    Sound *sound_controller;
-    Memory *memory;
-    Cpu *cpu;
-    Timers *timers;
+
+    std::unique_ptr<Cartridge> cart;
+    std::unique_ptr<File> rom_file;
+    std::unique_ptr<LCDController> lcd_controller;
+    std::unique_ptr<Sound> sound_controller;
+    std::unique_ptr<Memory> memory;
+    std::unique_ptr<Cpu> cpu;
+    std::unique_ptr<Timers> timers;
 
     void power_on();
     void power_off();

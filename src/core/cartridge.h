@@ -1,6 +1,8 @@
 #ifndef CARTRIDGE_H
 #define CARTRIDGE_H
 
+#include <memory>
+
 #include "system_types.h"
 
 class Cartridge
@@ -9,7 +11,7 @@ class Cartridge
     Cartridge(u8 * const, int);
     ~Cartridge();
 
-    u8 *rom;
+    std::unique_ptr<u8[]> rom;
     int size;
     int rom_size;
     int ram_size;

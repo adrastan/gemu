@@ -4,8 +4,8 @@
 #include "logger.h"
 
 Cartridge::Cartridge(u8 * const buf, int size)
+    : rom(std::make_unique<u8[]>(size))
 {
-    this->rom = new u8[size];
     this->size = size;
 
     for (int i = 0; i < size; ++i)
@@ -53,7 +53,7 @@ Cartridge::Cartridge(u8 * const buf, int size)
 
 Cartridge::~Cartridge()
 {
-    delete[] this->rom;
+    // delete[] this->rom;
 }
 
 void Cartridge::print()

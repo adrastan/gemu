@@ -3,29 +3,19 @@
 #include "system.h"
 #include "logger.h"
 
-System::System(const std::string file_path)
+System::System(const std::string file_path) :
+    lcd_controller(std::make_unique<LCDController>()),
+    memory(std::make_unique<Memory>()),
+    cpu(std::make_unique<Cpu>()),
+    timers(std::make_unique<Timers>()),
+    sound_controller(std::make_unique<Sound>())
 {
     this->cart = NULL;
     this->rom_file = NULL;
-    this->lcd_controller = new LCDController();
-    this->memory = new Memory();
-    this->cpu = new Cpu();
-    this->timers = new Timers();
-    this->sound_controller = new Sound();
     this->load_cart_from_file(file_path);
 }
 
-System::~System()
-{
-    Logger::log("Destructing System...");
-    delete this->cart;
-    delete this->rom_file;
-    delete this->lcd_controller;
-    delete this->memory;
-    delete this->cpu;
-    delete this->timers;
-    delete this->sound_controller;
-}
+System::~System() {}
 
 void System::power_on()
 {
@@ -110,7 +100,7 @@ void System::power_off()
 
 void System::load_cart_from_file(const std::string file_path)
 {
-    this->rom_file = new File(file_path);
+    this->rom_file = std::make_unique<File>(file_path);
 
     if (this->rom_file->buf == NULL)
     {
@@ -118,7 +108,7 @@ void System::load_cart_from_file(const std::string file_path)
         return;
     }
 
-    this->cart = new Cartridge(this->rom_file->buf, this->rom_file->size);
+    this->cart = std::make_unique<Cartridge>(this->rom_file->buf, this->rom_file->size);
     this->cart->print();
 }
 
