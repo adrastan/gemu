@@ -8,10 +8,13 @@ Cartridge::Cartridge(u8 * const buf, int size)
 {
     this->size = size;
 
+    // Load file into cart rom
     for (int i = 0; i < size; ++i)
     {
         rom[i] = buf[i];
     }
+
+    // Init cart ram
     for (int i = 0; i < 131072; ++i) {
         ram[i] = 0;
     }

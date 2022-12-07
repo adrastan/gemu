@@ -71,7 +71,7 @@ class System
     SDL_Renderer* renderer = NULL;
     SDL_Event event;
 
-    std::unique_ptr<Cartridge> cart;
+    Cartridge *cart;
     std::unique_ptr<File> rom_file;
     std::unique_ptr<LCDController> lcd_controller;
     std::unique_ptr<Sound> sound_controller;

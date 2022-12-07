@@ -108,8 +108,10 @@ void System::load_cart_from_file(const std::string file_path)
         return;
     }
 
-    this->cart = std::make_unique<Cartridge>(this->rom_file->buf, this->rom_file->size);
+    this->cart = new Cartridge(this->rom_file->buf, this->rom_file->size);
     this->cart->print();
+
+    this->memory->cart = this->cart;
 }
 
 void System::init_SDL() {
