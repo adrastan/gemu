@@ -5,6 +5,7 @@
 
 #include "system_types.h"
 #include "cartridge.h"
+#include "lcd_controller.h"
 
 typedef struct {
     u16 source;
@@ -29,7 +30,9 @@ class Memory
     int ram_enabled;
     int bank_mode;
     int rtc_select;
+    int prepare_speed = 0;
     Cartridge *cart;
+    LCDController *lcd_controller;
     DMA dma;
 
     u8 read_memory(u16);

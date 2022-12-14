@@ -9,3 +9,8 @@ void LCDController::update(int cycles)
 {
 
 }
+
+void LCDController::switch_mode(int)
+{
+
+}

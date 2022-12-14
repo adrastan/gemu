@@ -4,14 +4,15 @@
 #include "logger.h"
 
 System::System(const std::string file_path) :
-    lcd_controller(std::make_unique<LCDController>()),
     memory(std::make_unique<Memory>()),
+    lcd_controller(std::make_unique<LCDController>()),
     cpu(std::make_unique<Cpu>()),
     timers(std::make_unique<Timers>()),
     sound_controller(std::make_unique<Sound>())
 {
-    this->cart = NULL;
-    this->rom_file = NULL;
+    this->memory->lcd_controller = this->lcd_controller.get();
+    this->cart = nullptr;
+    this->rom_file = nullptr;
     this->load_cart_from_file(file_path);
 }
 
@@ -19,7 +20,7 @@ System::~System() {}
 
 void System::power_on()
 {
-    if (this->cart == NULL)
+    if (this->cart == nullptr)
     {
         Logger::log("Could not power on. Cart not initialised.");
         return;
@@ -37,13 +38,13 @@ void System::power_on()
 
 void System::draw_frames()
 {
-    while (this->fps_count <= 70224)
+    while (this->lcd_controller->fps_count <= 70224)
     {
         this->poll_events();
         this->next_op();
     }
     this->lcd_controller->draw_frame();
-    this->fps_count -= 70224;
+    this->lcd_controller->fps_count -= 70224;
 }
 
 void System::poll_events()
@@ -75,7 +76,7 @@ void System::next_op()
     {
         this->counter += 4;
     }
-    this->fps_count += this->counter;
+    this->lcd_controller->fps_count += this->counter;
     this->lcd_controller->update(this->counter);
     this->sound_controller->update(this->counter);
     this->timers->update(this->counter);
@@ -102,16 +103,16 @@ void System::load_cart_from_file(const std::string file_path)
 {
     this->rom_file = std::make_unique<File>(file_path);
 
-    if (this->rom_file->buf == NULL)
+    if (this->rom_file->buf == nullptr)
     {
         Logger::log("Can't open rom file.");
         return;
     }
 
-    this->cart = new Cartridge(this->rom_file->buf, this->rom_file->size);
+    this->cart = std::make_unique<Cartridge>(this->rom_file->buf, this->rom_file->size);
     this->cart->print();
 
-    this->memory->cart = this->cart;
+    this->memory->cart = this->cart.get();
 }
 
 void System::init_SDL() {

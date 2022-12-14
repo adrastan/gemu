@@ -8,12 +8,12 @@
 
 #include "cartridge.h"
 #include "file.h"
-#include "lcd_controller.h"
 #include "system_types.h"
 #include "memory.h"
 #include "cpu.h"
 #include "sound.h"
 #include "timers.h"
+#include "lcd_controller.h"
 
 #define SCREEN_HEIGHT 300
 #define SCREEN_WIDTH 300
@@ -59,7 +59,6 @@ class System
 
     bool is_running = false;
     bool halt = false;
-    int fps_count = 0;
     int counter = 0;
     int delay = 0;
 
@@ -71,13 +70,13 @@ class System
     SDL_Renderer* renderer = NULL;
     SDL_Event event;
 
-    Cartridge *cart;
     std::unique_ptr<File> rom_file;
-    std::unique_ptr<LCDController> lcd_controller;
     std::unique_ptr<Sound> sound_controller;
     std::unique_ptr<Memory> memory;
     std::unique_ptr<Cpu> cpu;
     std::unique_ptr<Timers> timers;
+    std::unique_ptr<LCDController> lcd_controller;
+    std::unique_ptr<Cartridge> cart;
 
     void power_on();
     void power_off();

@@ -5,7 +5,7 @@
 
 File::File(std::string file_path)
 {
-    this->buf = NULL;
+    this->buf = nullptr;
     this->read_file(file_path);
 }
 

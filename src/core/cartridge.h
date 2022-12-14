@@ -11,13 +11,13 @@ class Cartridge
     Cartridge(u8 * const, int);
     ~Cartridge();
 
-    std::unique_ptr<u8[]> rom;
+    u8 *rom;
     u8 ram[131072];
 
     int size;
     int rom_size;
     int ram_size;
-    int mbc;
+    int mbc = 0;
 
     bool is_ram_enabled;
     bool is_cgb;

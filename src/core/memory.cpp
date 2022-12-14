@@ -1,9 +1,11 @@
+#include <logger.h>
 #include "memory.h"
 #include "bit_helper.h"
 
 Memory::Memory()
 {
-    this->cart = NULL;
+    this->lcd_controller = nullptr;
+    this->cart = nullptr;
     this->bank = 1;
     this->vram_bank = 0;
     this->wram_bank = 1;
@@ -198,8 +200,8 @@ void Memory::write_memory(u16 address, u8 byte)
     {
         if (BitHelper::is_set(byte,7) && !BitHelper::is_set(memory[address],7))
         {
-            switch_mode(2);
-            fps_count = 0;
+            this->lcd_controller->switch_mode(2);
+            this->lcd_controller->fps_count = 0;
         }
 
         memory[address] = byte;
@@ -256,21 +258,21 @@ void Memory::write_memory(u16 address, u8 byte)
 
     if (address == 0xff68)
     {
-        bg_palette.auto_inc = is_set(byte, 7);
-        bg_palette.index = 0x3f & byte;
+        this->lcd_controller->bg_palette.auto_inc = BitHelper::is_set(byte, 7);
+        this->lcd_controller->bg_palette.index = 0x3f & byte;
         memory[address] = byte;
         return;
     }
 
     if (address == 0xff69)
     {
-        bg_palette.palette[bg_palette.index] = byte;
-        if (bg_palette.auto_inc)
+        this->lcd_controller->bg_palette.palette[this->lcd_controller->bg_palette.index] = byte;
+        if (this->lcd_controller->bg_palette.auto_inc)
         {
-            ++bg_palette.index;
-            if (bg_palette.index > 0x3f)
+            ++this->lcd_controller->bg_palette.index;
+            if (this->lcd_controller->bg_palette.index > 0x3f)
             {
-                bg_palette.index = 0;
+                this->lcd_controller->bg_palette.index = 0;
             }
         }
 
@@ -280,21 +282,21 @@ void Memory::write_memory(u16 address, u8 byte)
 
     if (address == 0xff6A)
     {
-        spr_palette.auto_inc = is_set(byte, 7);
-        spr_palette.index = 0x3f & byte;
+        this->lcd_controller->spr_palette.auto_inc = BitHelper::is_set(byte, 7);
+        this->lcd_controller->spr_palette.index = 0x3f & byte;
         memory[address] = byte;
         return;
     }
 
     if (address == 0xff6B)
     {
-        spr_palette.palette[spr_palette.index] = byte;
-        if (spr_palette.auto_inc)
+        this->lcd_controller->spr_palette.palette[this->lcd_controller->spr_palette.index] = byte;
+        if (this->lcd_controller->spr_palette.auto_inc)
         {
-            spr_palette.index++;
-            if (spr_palette.index > 0x3f)
+            this->lcd_controller->spr_palette.index++;
+            if (this->lcd_controller->spr_palette.index > 0x3f)
             {
-                spr_palette.index = 0;
+                this->lcd_controller->spr_palette.index = 0;
             }
         }
         memory[address] = byte;
@@ -307,12 +309,12 @@ void Memory::write_memory(u16 address, u8 byte)
         return;
     }
 
-    if (address == 0xff4f && headers.cgb)
+    if (address == 0xff4f && this->cart->is_cgb)
     {
         vram_bank = 1 & byte;
     }
 
-    if (address == 0xff70 && headers.cgb)
+    if (address == 0xff70 && this->cart->is_cgb)
     {
         wram_bank = byte & 7;
         if (!wram_bank)
@@ -321,20 +323,19 @@ void Memory::write_memory(u16 address, u8 byte)
         }
     }
 
-    if (headers.cgb && address == 0xFF4D)
+    if (this->cart->is_cgb && address == 0xFF4D)
     {
-        if (is_set(byte, 0))
+        if (BitHelper::is_set(byte, 0))
         {
-            printf("prepare speed %d\n", double_speed);
             prepare_speed = 1;
         }
         memory[address] = byte;
         return;
     }
 
-    if (headers.cgb && address == 0xFF56)
+    if (this->cart->is_cgb && address == 0xFF56)
     {
-        printf("infrared not supported\n");
+        Logger::log("infrared not supported");
     }
 
     memory[address] = byte;
