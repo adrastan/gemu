@@ -13,6 +13,7 @@ System::System(const std::string file_path) :
     this->memory->lcd_controller = this->lcd_controller.get();
     this->cart = nullptr;
     this->rom_file = nullptr;
+    this->opcode = std::make_unique<Opcode>(this, memory.get(), cpu.get());
     this->load_cart_from_file(file_path);
 }
 
@@ -68,9 +69,9 @@ void System::next_op()
     this->delay = 0;
     if (!this->halt)
     {
-        this->opcode = this->memory->read_memory(this->cpu->pc.PC++);
-        this->counter += System::op_cycles[this->opcode];
-        this->process_opcode();
+        this->opcode->next();
+        this->counter += System::op_cycles[this->opcode->current()];
+        this->opcode->process();
     }
     else
     {
@@ -81,11 +82,6 @@ void System::next_op()
     this->sound_controller->update(this->counter);
     this->timers->update(this->counter);
     this->check_interrupts();
-}
-
-void System::process_opcode()
-{
-
 }
 
 void System::check_interrupts()

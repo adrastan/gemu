@@ -2,21 +2,23 @@
 #define SYSTEM_H
 
 #define SDL_MAIN_HANDLED
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #include <string>
 #include <memory>
 
 #include "cartridge.h"
 #include "file.h"
-#include "system_types.h"
 #include "memory.h"
 #include "cpu.h"
 #include "sound.h"
 #include "timers.h"
 #include "lcd_controller.h"
+#include "opcode.h"
 
 #define SCREEN_HEIGHT 300
 #define SCREEN_WIDTH 300
+
+class Opcode;
 
 class System
 {
@@ -62,8 +64,6 @@ class System
     int counter = 0;
     int delay = 0;
 
-    u8 opcode;
-
     SDL_Window* sdl_window = NULL;
     SDL_Surface* screen_surface = NULL;
     SDL_Texture* texture = NULL;
@@ -77,6 +77,7 @@ class System
     std::unique_ptr<Timers> timers;
     std::unique_ptr<LCDController> lcd_controller;
     std::unique_ptr<Cartridge> cart;
+    std::unique_ptr<Opcode> opcode;
 
     void power_on();
     void power_off();

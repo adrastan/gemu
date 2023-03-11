@@ -37,6 +37,25 @@ class Cpu
     Registers regs;
     ProgramCounter pc;
     StackPointer sp;
+
+    int halt = 0;
+    int stopped = 0;
+    int prepare_speed = 0;
+    int double_speed = 0;
+    int ime = 0;
+
+    u8 test_z(void);
+    u8 test_n(void);
+    u8 test_c(void);
+    u8 test_h(void);
+    void set_z(void);
+    void reset_z(void);
+    void set_n(void);
+    void reset_n(void);
+    void set_h(void);
+    void reset_h(void);
+    void set_c(void);
+    void reset_c(void);
 };
 
 #endif //CPU_H

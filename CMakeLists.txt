@@ -32,6 +32,8 @@ add_library(
     src/core/lcd_controller.h
     src/core/opcode.h
     src/core/opcode.cpp
+    src/core/pre_opcode.h
+    src/core/pre_opcode.cpp
     src/core/memory.cpp
     src/core/memory.h
     src/core/sound.cpp
