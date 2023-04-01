@@ -72,4 +72,4 @@ include_directories(src/core)
 add_executable(main src/main.cpp)
 target_link_libraries(main PRIVATE gemu)
 
-add_subdirectory(src/gui)
+#add_subdirectory(src/gui)
