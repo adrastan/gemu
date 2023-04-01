@@ -14,6 +14,7 @@
 #include "timers.h"
 #include "lcd_controller.h"
 #include "opcode.h"
+#include "interrupt.h"
 
 #define SCREEN_HEIGHT 300
 #define SCREEN_WIDTH 300
@@ -62,12 +63,11 @@ class System
     bool is_running = false;
     bool halt = false;
     int counter = 0;
-    int delay = 0;
 
-    SDL_Window* sdl_window = NULL;
-    SDL_Surface* screen_surface = NULL;
-    SDL_Texture* texture = NULL;
-    SDL_Renderer* renderer = NULL;
+    SDL_Window* sdl_window = nullptr;
+    SDL_Surface* screen_surface = nullptr;
+    SDL_Texture* texture = nullptr;
+    SDL_Renderer* renderer = nullptr;
     SDL_Event event;
 
     std::unique_ptr<File> rom_file;
@@ -78,6 +78,7 @@ class System
     std::unique_ptr<LCDController> lcd_controller;
     std::unique_ptr<Cartridge> cart;
     std::unique_ptr<Opcode> opcode;
+    std::unique_ptr<Interrupt> interrupt;
 
     void power_on();
     void power_off();

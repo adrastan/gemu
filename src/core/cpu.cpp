@@ -81,3 +81,12 @@ void Cpu::reset_c()
 {
     regs.byte.F &= ~(1 << 4);
 }
+
+void Cpu::push(u16 word)
+{
+    u8 high = (word & 0xff00) >> 8;
+    u8 low = (word & 0x00ff);
+    this->memory->write_memory(sp.SP-1, high);
+    this->memory->write_memory(sp.SP-2, low);
+    sp.SP = sp.SP - 2;
+}

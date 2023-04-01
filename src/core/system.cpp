@@ -5,16 +5,21 @@
 
 System::System(const std::string file_path) :
     memory(std::make_unique<Memory>()),
-    lcd_controller(std::make_unique<LCDController>()),
     cpu(std::make_unique<Cpu>()),
     timers(std::make_unique<Timers>()),
-    sound_controller(std::make_unique<Sound>())
+    sound_controller(std::make_unique<Sound>()),
+    interrupt(std::make_unique<Interrupt>())
 {
-    this->memory->lcd_controller = this->lcd_controller.get();
     this->cart = nullptr;
     this->rom_file = nullptr;
     this->opcode = std::make_unique<Opcode>(this, memory.get(), cpu.get());
+    this->lcd_controller = std::make_unique<LCDController>(memory.get());
+    this->memory->lcd_controller = this->lcd_controller.get();
     this->load_cart_from_file(file_path);
+    this->interrupt->memory = this->memory.get();
+    this->interrupt->cpu = this->cpu.get();
+    this->memory->lcd_controller->interrupt = this->interrupt.get();
+    this->cpu->memory = this->memory.get();
 }
 
 System::~System() {}
@@ -28,6 +33,8 @@ void System::power_on()
     }
 
     this->init_SDL();
+    this->lcd_controller->screen_surface = this->screen_surface;
+    this->lcd_controller->renderer = this->renderer;
     this->is_running = true;
 
     Logger::log("Starting main game loop.");
@@ -65,8 +72,8 @@ void System::poll_events()
 
 void System::next_op()
 {
-    this->counter = this->delay;
-    this->delay = 0;
+    this->counter = this->cpu->delay;
+    this->cpu->delay = 0;
     if (!this->halt)
     {
         this->opcode->next();
@@ -109,6 +116,7 @@ void System::load_cart_from_file(const std::string file_path)
     this->cart->print();
 
     this->memory->cart = this->cart.get();
+    this->lcd_controller->cart = this->cart.get();
 }
 
 void System::init_SDL() {

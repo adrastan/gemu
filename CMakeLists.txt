@@ -30,6 +30,8 @@ add_library(
     src/core/cartridge.h
     src/core/lcd_controller.cpp
     src/core/lcd_controller.h
+    src/core/interrupt.cpp
+    src/core/interrupt.h
     src/core/opcode.h
     src/core/opcode.cpp
     src/core/pre_opcode.h

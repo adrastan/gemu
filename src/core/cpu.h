@@ -2,6 +2,7 @@
 #define CPU_H
 
 #include "system_types.h"
+#include "memory.h"
 
 // main registers
 union Registers {
@@ -29,6 +30,8 @@ union ProgramCounter {
     } byte;
 };
 
+class Memory;
+
 class Cpu
 {
     public:
@@ -37,12 +40,14 @@ class Cpu
     Registers regs;
     ProgramCounter pc;
     StackPointer sp;
+    Memory *memory;
 
     int halt = 0;
     int stopped = 0;
     int prepare_speed = 0;
     int double_speed = 0;
     int ime = 0;
+    int delay = 0;
 
     u8 test_z(void);
     u8 test_n(void);
@@ -56,6 +61,8 @@ class Cpu
     void reset_h(void);
     void set_c(void);
     void reset_c(void);
+
+    void push(u16);
 };
 
 #endif //CPU_H

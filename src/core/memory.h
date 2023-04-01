@@ -15,6 +15,8 @@ typedef struct {
     int position;
 } DMA;
 
+class LCDController;
+
 class Memory
 {
     public:
