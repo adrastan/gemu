@@ -1,32 +1,13 @@
 /*
  * Gemu - Nintendo Game Boy Emulator
  * Copyright (C) 2017  Alex Dempsey
-
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * any later version.
-
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see http://www.gnu.org/licenses/
- *
  */
 
-#ifndef EMSCRIPTEN
-#include <SDL2\SDL.h>
+#include <SDL.h>
 extern SDL_Window* window;
 extern SDL_Surface* screen_surface;
 extern SDL_Texture* texture;
 extern SDL_Renderer* renderer;
-#endif
-
-#ifdef EMSCRIPTEN
-extern unsigned char pixels[160 * 144 * 3];
-#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -265,7 +246,7 @@ struct Sprite get_sprite(int pixel)
             break;
         }
     }
-    struct Sprite sprites_on_pixel[sprite_count];
+    struct Sprite sprites_on_pixel[10];
 
     count = 0;
     // get all sprites which fall on the current pixel
@@ -389,13 +370,6 @@ struct Pixel get_colour(int colour_number, int palette_index, Palette *palette, 
         if (blue > 255) blue = 255;
     }
 
-    #ifdef EMSCRIPTEN
-    int temp;
-    temp = red;
-    red = blue;
-    blue = temp;
-    #endif
-
     px.red = red;
     px.green = green;
     px.blue = blue;
@@ -403,7 +377,6 @@ struct Pixel get_colour(int colour_number, int palette_index, Palette *palette, 
     return px;
 }
 
-#ifndef EMSCRIPTEN
 void draw_pixel(int pixel, int red, int green, int blue)
 {
     u_int8 ly = memory[0xff44];
@@ -419,24 +392,6 @@ void draw_pixel(int pixel, int red, int green, int blue)
     p[idx + 1] = green;
     p[idx + 2] = blue;
 }
-#endif
-
-#ifdef EMSCRIPTEN
-void draw_pixel(int pixel, int red, int green, int blue)
-{
-    u_int8 ly = memory[0xff44];
-    // set pixel value
-    screen[ly][pixel][0] = red;
-    screen[ly][pixel][1] = green;
-    screen[ly][pixel][2] = blue;
-
-    int idx = 160 * 3 * ly + 3 * pixel;
-
-    pixels[idx + 0] = red;
-    pixels[idx + 1] = green;
-    pixels[idx + 2] = blue;
-}
-#endif
 
 u_int16 get_sprite_address(int sprite_size, struct Sprite *spr)
 {
@@ -507,7 +462,6 @@ void sort_sprites(struct Sprite spr[], int n)
     }
 }
 
-#ifndef EMSCRIPTEN
 // renders the next frame
 void draw_frame()
 {
@@ -528,7 +482,6 @@ void draw_frame()
     SDL_RenderPresent(renderer);
     SDL_DestroyTexture(screenTexture);
 }
-#endif
 
 // switch current lcd mode
 void switch_mode(int mode)

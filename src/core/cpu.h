@@ -1,19 +1,6 @@
 /*
  * Gemu - Nintendo Game Boy Emulator
  * Copyright (C) 2017  Alex Dempsey
-
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * any later version.
-
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see http://www.gnu.org/licenses/
- *
  */
 
 #ifndef CPU_H
@@ -21,20 +8,14 @@
 
 #include <stdio.h>
 
-#ifndef EMSCRIPTEN
-#include <SDL2/SDL.h>
+#include <SDL.h>
+#include "cpu_types.h"
+
 extern SDL_Window* sdl_window;
 extern SDL_Surface* screen_surface;
 extern SDL_Texture* texture;
 extern SDL_Renderer* renderer;
 void update_frame(SDL_Event *);
-#endif
-
-#ifdef EMSCRIPTEN
-void update_frame(void);
-#endif
-
-#include "cpu_types.h"
 
 #define SCREEN_WIDTH 160*3
 #define SCREEN_HEIGHT 144*3

@@ -67,12 +67,16 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\adras\Desktop\gemu\src\SDL2\SDL2-2.28.5\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\adras\Desktop\gemu\src\SDL2\SDL2-2.28.5\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -88,10 +92,13 @@
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level3</WarningLevel>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>C:\Users\adras\Desktop\gemu\src\SDL2\SDL2-2.28.5\include;C:\Users\adras\Desktop\gemu\src\external\Gb_Snd_Emu-0.1.4;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -110,12 +117,15 @@
     <ClCompile>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level3</WarningLevel>
+      <LanguageStandard>stdcpp20</LanguageStandard>
+      <AdditionalIncludeDirectories>C:\Users\adras\Desktop\gemu\src\SDL2\SDL2-2.28.5\include;C:\Users\adras\Desktop\gemu\src\external\Gb_Snd_Emu-0.1.4;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -129,18 +139,13 @@
     <ClCompile Include="src\core\registers.cpp" />
     <ClCompile Include="src\core\sound.cpp" />
     <ClCompile Include="src\core\timers.cpp" />
-    <ClCompile Include="src\emc.cpp" />
     <ClCompile Include="src\external\gb_snd_emu-0.1.4\Basic_Gb_Apu.cpp" />
-    <ClCompile Include="src\external\gb_snd_emu-0.1.4\demo.cpp" />
-    <ClCompile Include="src\external\gb_snd_emu-0.1.4\demo_sdl.cpp" />
     <ClCompile Include="src\external\gb_snd_emu-0.1.4\gb_apu\Blip_Buffer.cpp" />
     <ClCompile Include="src\external\gb_snd_emu-0.1.4\gb_apu\Gb_Apu.cpp" />
     <ClCompile Include="src\external\gb_snd_emu-0.1.4\gb_apu\Gb_Oscs.cpp" />
     <ClCompile Include="src\external\gb_snd_emu-0.1.4\gb_apu\Multi_Buffer.cpp" />
     <ClCompile Include="src\external\gb_snd_emu-0.1.4\Sound_Queue.cpp" />
     <ClCompile Include="src\external\gb_snd_emu-0.1.4\Wave_Writer.cpp" />
-    <ClCompile Include="src\gui\main.cpp" />
-    <ClCompile Include="src\gui\mainwindow.cpp" />
     <ClCompile Include="src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -168,7 +173,6 @@
     <ClInclude Include="src\external\gb_snd_emu-0.1.4\gb_apu\Multi_Buffer.h" />
     <ClInclude Include="src\external\gb_snd_emu-0.1.4\Sound_Queue.h" />
     <ClInclude Include="src\external\gb_snd_emu-0.1.4\Wave_Writer.h" />
-    <ClInclude Include="src\gui\mainwindow.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

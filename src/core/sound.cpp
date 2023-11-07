@@ -1,58 +1,17 @@
 /*
  * Gemu - Nintendo Game Boy Emulator
  * Copyright (C) 2017  Alex Dempsey
-
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * any later version.
-
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see http://www.gnu.org/licenses/
- *
  */
-
-#ifdef EMSCRIPTEN
-#include <emscripten.h>
-#endif
 
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <Basic_Gb_Apu.h>
+#include <gb_apu/Multi_Buffer.h>
+#include <Sound_Queue.h>
+
 #include "sound.h"
 #include "memory.h"
-
-#ifdef EMSCRIPTEN
-extern "C" {
-EMSCRIPTEN_KEEPALIVE
-int * getSoundRegisters()
-{
-	return (int *)&memory[0xFF10];
-}
-
-EMSCRIPTEN_KEEPALIVE
-int * getMemoryPtr() 
-{
-	return (int *)&memory[0];
-}
-
-EMSCRIPTEN_KEEPALIVE
-int * getCartPtr()
-{
-	return (int *)&cart_rom[0];
-}
-
-EMSCRIPTEN_KEEPALIVE
-int * getRamPtr()
-{
-	return (int *)&cart_ram[0];
-}
-}
-#endif
 
 int is_enabled() {
 	return is_set(memory[0xFF26], 7);
@@ -80,11 +39,6 @@ void update_apu(u_int16 address, u_int8 byte) {
 		memory[address] = byte;
 	}
 }
-
-#ifndef EMSCRIPTEN
-#include <Basic_Gb_Apu.h>
-#include <Multi_Buffer.h>
-#include <Sound_Queue.h>
 
 static Basic_Gb_Apu apu;
 static Sound_Queue sound;
@@ -125,25 +79,4 @@ void update_sound(int counter)
 	long count = apu.read_samples( buf, buf_size );
 	sound.write( buf, count );
 }
-#endif
 
-#ifdef EMSCRIPTEN
-EM_JS(void, call_write_memory, (int address, int byte), {
-	write_memory(address, byte);
-});
-
-EM_JS(void, call_update_sound, (int cycles), {
-	update_sound(cycles);
-})
-
-void sync_sound(u_int16 address, u_int8 byte)
-{
-	update_apu(address, byte);
-	call_write_memory((int) address, (int) byte);
-}
-
-void update_sound(int cycles)
-{
-	call_update_sound(cycles);
-}
-#endif
