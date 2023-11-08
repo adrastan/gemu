@@ -13,153 +13,147 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
     </Filter>
+    <Filter Include="Source Files\Core">
+      <UniqueIdentifier>{83a6995d-27e2-4818-8451-b64890d6a855}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Sound">
+      <UniqueIdentifier>{6c78e8c6-50f3-45b9-91c4-f18c1c6db7da}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Core">
+      <UniqueIdentifier>{74bed92e-9f78-4a60-9e0d-bc1ed5adc484}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Sound">
+      <UniqueIdentifier>{b73ad93d-f4f3-4d66-9ef5-766b46c2f7ae}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\emc.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\core\cpu.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Core</Filter>
     </ClCompile>
     <ClCompile Include="src\core\interrupts.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Core</Filter>
     </ClCompile>
     <ClCompile Include="src\core\joypad.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Core</Filter>
     </ClCompile>
     <ClCompile Include="src\core\lcd_controller.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Core</Filter>
     </ClCompile>
     <ClCompile Include="src\core\memory.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Core</Filter>
     </ClCompile>
     <ClCompile Include="src\core\opcodes.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Core</Filter>
     </ClCompile>
     <ClCompile Include="src\core\pre_opcodes.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Core</Filter>
     </ClCompile>
     <ClCompile Include="src\core\registers.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Core</Filter>
     </ClCompile>
     <ClCompile Include="src\core\sound.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Core</Filter>
     </ClCompile>
     <ClCompile Include="src\core\timers.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Core</Filter>
     </ClCompile>
     <ClCompile Include="src\external\gb_snd_emu-0.1.4\Basic_Gb_Apu.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\gb_snd_emu-0.1.4\demo.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\gb_snd_emu-0.1.4\demo_sdl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\gb_snd_emu-0.1.4\Sound_Queue.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\external\gb_snd_emu-0.1.4\Wave_Writer.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Sound</Filter>
     </ClCompile>
     <ClCompile Include="src\external\gb_snd_emu-0.1.4\gb_apu\Blip_Buffer.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Sound</Filter>
     </ClCompile>
     <ClCompile Include="src\external\gb_snd_emu-0.1.4\gb_apu\Gb_Apu.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Sound</Filter>
     </ClCompile>
     <ClCompile Include="src\external\gb_snd_emu-0.1.4\gb_apu\Gb_Oscs.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Sound</Filter>
     </ClCompile>
     <ClCompile Include="src\external\gb_snd_emu-0.1.4\gb_apu\Multi_Buffer.cpp">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Sound</Filter>
     </ClCompile>
-    <ClCompile Include="src\gui\main.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\external\gb_snd_emu-0.1.4\Sound_Queue.cpp">
+      <Filter>Source Files\Sound</Filter>
     </ClCompile>
-    <ClCompile Include="src\gui\mainwindow.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\external\gb_snd_emu-0.1.4\Wave_Writer.cpp">
+      <Filter>Source Files\Sound</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\core\cpu.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\core\cpu_types.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\core\interrupts.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\core\joypad.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\core\lcd_controller.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\core\memory.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\core\opcodes.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\core\pre_opcodes.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\core\registers.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\core\sound.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\core\timers.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Core</Filter>
     </ClInclude>
     <ClInclude Include="src\external\gb_snd_emu-0.1.4\Basic_Gb_Apu.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\external\gb_snd_emu-0.1.4\Sound_Queue.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\external\gb_snd_emu-0.1.4\Wave_Writer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\external\gb_snd_emu-0.1.4\boost\config.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\external\gb_snd_emu-0.1.4\boost\cstdint.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\external\gb_snd_emu-0.1.4\boost\static_assert.hpp">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Sound</Filter>
     </ClInclude>
     <ClInclude Include="src\external\gb_snd_emu-0.1.4\gb_apu\blargg_common.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Sound</Filter>
     </ClInclude>
     <ClInclude Include="src\external\gb_snd_emu-0.1.4\gb_apu\blargg_source.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Sound</Filter>
     </ClInclude>
     <ClInclude Include="src\external\gb_snd_emu-0.1.4\gb_apu\Blip_Buffer.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Sound</Filter>
     </ClInclude>
     <ClInclude Include="src\external\gb_snd_emu-0.1.4\gb_apu\Blip_Synth.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\gb_snd_emu-0.1.4\boost\config.hpp">
+      <Filter>Header Files\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\gb_snd_emu-0.1.4\boost\cstdint.hpp">
+      <Filter>Header Files\Sound</Filter>
     </ClInclude>
     <ClInclude Include="src\external\gb_snd_emu-0.1.4\gb_apu\Gb_Apu.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Sound</Filter>
     </ClInclude>
     <ClInclude Include="src\external\gb_snd_emu-0.1.4\gb_apu\Gb_Oscs.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Sound</Filter>
     </ClInclude>
     <ClInclude Include="src\external\gb_snd_emu-0.1.4\gb_apu\Multi_Buffer.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Sound</Filter>
     </ClInclude>
-    <ClInclude Include="src\gui\mainwindow.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\external\gb_snd_emu-0.1.4\Sound_Queue.h">
+      <Filter>Header Files\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\gb_snd_emu-0.1.4\boost\static_assert.hpp">
+      <Filter>Header Files\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="src\external\gb_snd_emu-0.1.4\Wave_Writer.h">
+      <Filter>Header Files\Sound</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
