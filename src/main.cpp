@@ -16,6 +16,11 @@ void start_emulator(char *);
 
 int main(int argc, char** args)
 {
+	if (args[1] == NULL) {
+		std::cout << "No rom provided" << std::endl;
+		return 0;
+	}
+
 	start_emulator(args[1]);
 	return 0;
 }
