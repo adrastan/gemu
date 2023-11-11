@@ -36,12 +36,41 @@ struct Tile get_tile(int);
 struct Sprite get_sprite(int);
 int compare_pixel(struct Tile *, struct Sprite *);
 struct Pixel get_colour(int, int, Palette *, u_int8);
+u_int8 *sprites;
+u_int8 sprites_on_scanline[10][4] = {{0}};
+int sprite_count = 0;
+int sprite_size = 8;
 
 void update_graphics()
 {
     int ly = memory[0xff44];
     if (ly < 0 || ly > 143) {
         return;
+    }
+
+    sprite_count = 0;
+    u_int8 lcdc = memory[0xff40];
+    sprites = &memory[0xFE00];
+
+    if (is_set(lcdc,2)) {
+        sprite_size = 16;
+    }
+
+    // filter sprites that fall on the current scanline
+    int offset = sprite_size == 8 ? 8 : 0;
+    for (int i = 0; i < 40; ++i) {
+        if (ly < (*(sprites + i * 4 + 0)) - 16 || ly >= ((*(sprites + i * 4 + 0)) - offset)) {
+            continue;
+        }
+
+        sprites_on_scanline[sprite_count][0] = *(sprites + i * 4 + 0);
+        sprites_on_scanline[sprite_count][1] = *(sprites + i * 4 + 1);
+        sprites_on_scanline[sprite_count][2] = *(sprites + i * 4 + 2);
+        sprites_on_scanline[sprite_count][3] = *(sprites + i * 4 + 3);
+        ++sprite_count;
+        if (sprite_count == 10) {
+            break;
+        }
     }
 
     for (int pixel = 0; pixel < 160; ++pixel) {
@@ -209,46 +238,13 @@ struct Sprite get_sprite(int pixel)
 {
     struct Sprite sprite;
     u_int8 ly = memory[0xff44];
-    u_int8 lcdc = memory[0xff40];
-    u_int8 sprites_on_scanline[10][4] = {{0}};
-    int sprite_size = 8;
-    int count = 0;
-    u_int8 sprites[40][4];
     int pallete_num;
     u_int8 pallete;
     int colour_number1, colour_number2;
 
-    // get all sprites from oam memory
-    for (int i = 0; i < 40; ++i) {
-        for (int j = 0; j < 4; ++j) {
-            sprites[i][j] = memory[0xFE00+count];
-            ++count;
-        }
-    }
-    int sprite_count = 0;
-
-    if (is_set(lcdc,2)) {
-        sprite_size = 16;
-    }
-
-    // filter sprites that fall on the current scanline
-    int offset = sprite_size == 8 ? 8 : 0;
-    for (int i = 0; i < 40; ++i) {
-        if (ly < sprites[i][0] - 16 || ly >= (sprites[i][0] - offset)) {
-            continue;
-        }
-        sprites_on_scanline[sprite_count][0] = sprites[i][0];
-        sprites_on_scanline[sprite_count][1] = sprites[i][1];
-        sprites_on_scanline[sprite_count][2] = sprites[i][2];
-        sprites_on_scanline[sprite_count][3] = sprites[i][3];
-        ++sprite_count;
-        if (sprite_count == 10) {
-            break;
-        }
-    }
     struct Sprite sprites_on_pixel[10];
 
-    count = 0;
+    int count = 0;
     // get all sprites which fall on the current pixel
     for (int i = 0; i < sprite_count; ++i) {
         if (pixel >= sprites_on_scanline[i][1] - 8 && pixel < sprites_on_scanline[i][1]) {
